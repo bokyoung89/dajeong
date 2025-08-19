@@ -34,8 +34,8 @@ function Page1() {
 
   return (
     <div style={styles.container}>
-      <h1 style={{ marginBottom: 0 }}>오늘 당신의 하루는 어땠나요?</h1>
-      <p style={{ marginTop: 10, fontSize: 20 }}>How was your day today?</p>
+      <h1 style={{ marginBottom: 0, fontFamily: "'Nanum Brush Script', cursive", fontSize: "5em" }}>오늘 당신의 하루는 어땠나요?</h1>
+       <p style={{ marginTop: 10, fontSize: "50px", fontFamily: "'Nanum Brush Script', cursive" }}>How was your day today?</p>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -65,16 +65,18 @@ const styles = {
   },
   textarea: {
     width: "800px",
-    height: "20px",
+    height: "25px",
     padding: "10px",
     margin: "5px",
     fontSize: "16px",
+    lineHeight: "25px",
     backgroundColor: "#ffffff",      // 흰색 배경
     borderRadius: "10px",            // 둥근 모서리
     border: "1px solid #ccc",        // 테두리
     outline: "none",                 // 포커스 시 기본 테두리 제거
     color: "#545454", 
-    textAlign: "center", 
+    textAlign: "center",
+    fontFamily: "Arial, sans-serif", 
   },
   button: {
     padding: "10px 20px",
@@ -89,6 +91,8 @@ styleSheet.innerHTML = `
   textarea::placeholder {
     color: #cbc2b9;
     text-align: center;
+    font-family: Arial, sans-serif;
+    line-height: 25px;
   }
 `;
 document.head.appendChild(styleSheet);

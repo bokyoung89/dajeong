@@ -5,8 +5,20 @@ function Page2() {
   const location = useLocation();
   const navigate = useNavigate();
   const result = location.state?.result;
-  const refText = result?.encouragement || "";
-  const source = result?.source || "";
+  let refText = result?.encouragement || "";
+  let source = result?.source || "";
+
+  try {
+    // Check if encouragement is a JSON string and parse it
+    if (typeof refText === 'string' && refText.startsWith('{')) {
+      const parsed = JSON.parse(refText);
+      refText = parsed.sentence || refText; // Use parsed sentence, fallback to original
+      source = parsed.source || source;     // Use parsed source, fallback to original
+    }
+  } catch (e) {
+    // If parsing fails, do nothing and use the original text
+    console.error("Failed to parse encouragement JSON:", e);
+  }
   const [typed, setTyped] = useState("");
   const [overlay, setOverlay] = useState(true);
   const [showGuide, setShowGuide] = useState(true);
@@ -49,9 +61,10 @@ function Page2() {
     return (end - startedAt) / 1000;
   }, [startedAt, endedAt, now]);
 
-  const wpm = useMemo(() => {
-    const words = typedArr.length / 5;
-    return elapsedSec > 0 ? Math.round((words / elapsedSec) * 60) : 0;
+  const tajaSpeed = useMemo(() => {
+    if (elapsedSec <= 0) return 0;
+    // 분당 타수 계산
+    return Math.round((typedArr.length / elapsedSec) * 60);
   }, [typedArr.length, elapsedSec]);
 
   // 필사 영역 포커싱
@@ -157,7 +170,7 @@ function Page2() {
         />
       </div>
 
-      <hr style={{ width: "90vw", maxWidth: "600px", borderTop: "1px solid #aaa", margin: "20px 0" }} />
+            <hr style={{ width: "90vw", maxWidth: "800px", borderTop: "1px solid #aaa", margin: "20px 0" }} />
 
       {/* 출처 */}
         {source && (
@@ -192,7 +205,7 @@ function Page2() {
       <div style={{ marginTop: 20, color: "#f3dbb9" }}>
         <p>정확도: <strong>{accuracy}%</strong></p>
         <p>진행도: <strong>{progress}%</strong> ({typedArr.length}/{refArr.length})</p>
-        <p>속도: <strong>{wpm} WPM</strong> {elapsedSec > 0 && <>· {Math.floor(elapsedSec)}초 경과</>}</p>
+        <p>속도: <strong>{tajaSpeed}타</strong> {elapsedSec > 0 && <>· {Math.floor(elapsedSec)}초 경과</>}</p>
       </div>
 
       {/* 완료 메시지 */}
@@ -203,7 +216,7 @@ function Page2() {
       )}
 
       <button style={{ marginTop: 30 }} onClick={() => navigate("/")}>
-        다시 입력하기
+        기분 다시 입력하기
       </button>
     </div>
   );
@@ -229,15 +242,15 @@ const styles = {
     margin: "10px",
     padding: "15px",
     borderRadius: "8px",
-    width: "90vw",
-    maxWidth: "600px",
+    width: "100vw",
+    maxWidth: "800px",
     minHeight: "200px",
     textAlign: "left",
     overflow: "hidden",
     fontFamily: "Arial, sans-serif",
     },
   refText: {
-    fontFamily: "Arial, sans-serif",
+    fontFamily: "'Noto Serif Korean', serif",
     fontSize: 26,
     lineHeight: "30px",
     whiteSpace: "pre-wrap",
@@ -250,12 +263,13 @@ const styles = {
     left: 0,
     width: "100%",
     height: "100%",
+    padding: "15px",
     backgroundColor: "transparent",
     color: "transparent",
     caretColor: "#6366f1",
-    fontFamily: "monospace",
-    fontSize: 18,
-    lineHeight: "27px",
+    fontFamily: "'Noto Serif Korean', serif",
+    fontSize: 26,
+    lineHeight: "30px",
     resize: "none",
     outline: "none",
     border: "none",
