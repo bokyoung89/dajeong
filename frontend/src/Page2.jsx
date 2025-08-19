@@ -31,9 +31,9 @@ function Page2() {
     if (typeof Intl !== "undefined" && Intl.Segmenter) {
       const segmenter = new Intl.Segmenter("ko", { granularity: "grapheme" });
       return Array.from(segmenter.segment(text), (s) => s.segment);
-  }
-  // fallback
-  return Array.from(text);
+    }
+    // fallback
+    return Array.from(text);
   };
 
   const refArr = useMemo(() => getSyllables(refText), [refText]);
@@ -95,9 +95,8 @@ function Page2() {
 
   return (
     <div style={styles.container}>
-      <h2>오늘의 분석 결과</h2>
-      <p><strong>오늘의 감정은:</strong> {result.emotion}입니다.</p>
-      
+      <p><strong>오늘 당신의 감정은:</strong> {result.emotion}입니다.</p>
+
       {/* 필사 입력 + 오버레이 + 가이드 통합 */}
       <div style={styles.quoteBox} onClick={focusInput}>
         {showGuide && (
@@ -170,14 +169,14 @@ function Page2() {
         />
       </div>
 
-            <hr style={{ width: "90vw", maxWidth: "800px", borderTop: "1px solid #aaa", margin: "20px 0" }} />
+      <hr style={{ width: "90vw", maxWidth: "800px", borderTop: "1px solid #aaa", margin: "20px 0" }} />
 
       {/* 출처 */}
-        {source && (
-        <div style={{ marginTop: 10, fontSize: "14px", color: "#ccc"}}>
-            <em>{source}</em>
+      {source && (
+        <div style={{ marginTop: 10, fontSize: "14px", color: "#ccc" }}>
+          <em>{source}</em>
         </div>
-        )}
+      )}
 
       {/* 옵션 */}
       <div style={{ marginTop: 20, marginBottom: 20 }}>
@@ -239,7 +238,7 @@ const styles = {
   },
   quoteBox: {
     position: "relative",
-    margin: "10px",
+    margin: "40px",
     padding: "15px",
     borderRadius: "8px",
     width: "100vw",
@@ -248,7 +247,7 @@ const styles = {
     textAlign: "left",
     overflow: "hidden",
     fontFamily: "Arial, sans-serif",
-    },
+  },
   refText: {
     fontFamily: "'Noto Serif Korean', serif",
     fontSize: 26,
