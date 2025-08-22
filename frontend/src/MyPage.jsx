@@ -32,29 +32,40 @@ function MyPage() {
 
   return (
     <div style={styles.container}>
+      <div style={styles.buttonContainer}>
+        <button onClick={() => navigate('/')} style={styles.homeButton}>
+          홈으로 돌아가기
+        </button>
+        <button onClick={handleLogout} style={styles.button}>
+          로그아웃
+        </button>
+      </div>
       <h1 style={styles.title}>마이페이지</h1>
       <p style={styles.text}>환영합니다, {session.user.email}님!</p>
-      <button onClick={handleLogout} style={styles.button}>
-        로그아웃
-      </button>
-      <button onClick={() => navigate('/')} style={styles.backButton}>
-        홈으로 돌아가기
-      </button>
     </div>
   );
 }
 
 const styles = {
   container: {
+    position: 'relative',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
+    width: '100vw',
     backgroundColor: '#3e513c',
     color: '#f3dbb9',
     fontFamily: 'Arial, sans-serif',
-    padding: '20px',
+    boxSizing: 'border-box',
+  },
+  buttonContainer: {
+    position: 'absolute',
+    top: '20px',
+    right: '20px',
+    display: 'flex',
+    gap: '10px',
   },
   title: {
     fontSize: '2.5em',
@@ -65,9 +76,8 @@ const styles = {
     marginBottom: '20px',
   },
   button: {
-    padding: '12px 25px',
-    margin: '10px',
-    fontSize: '1.1em',
+    padding: '10px 20px',
+    fontSize: '1em',
     cursor: 'pointer',
     backgroundColor: '#f3dbb9',
     color: '#3e513c',
@@ -75,8 +85,7 @@ const styles = {
     borderRadius: '8px',
     transition: 'background-color 0.3s ease',
   },
-  backButton: {
-    marginTop: '20px',
+  homeButton: {
     padding: '10px 20px',
     fontSize: '1em',
     cursor: 'pointer',

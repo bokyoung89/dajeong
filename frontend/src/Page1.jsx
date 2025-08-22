@@ -55,7 +55,6 @@ const styles = {
   container: {
     position: "relative", // 추가
     width: "100vw",
-    height: "100vh",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -65,6 +64,7 @@ const styles = {
     backgroundColor: "#3e513c",
     color: "#f3dbb9",
     padding: "20px",
+    boxSizing: "border-box", 
   },
   textarea: {
     width: "800px",

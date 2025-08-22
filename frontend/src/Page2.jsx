@@ -234,11 +234,11 @@ const styles = {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "start",
-    minHeight: "100vh",
     padding: "40px 20px",
     backgroundColor: "#3e513c",
-    Color: "#f3dbb9",
+    color: "#f3dbb9",
     fontFamily: "Arial, sans-serif",
+    boxSizing: "border-box",
   },
   quoteBox: {
     position: "relative",
