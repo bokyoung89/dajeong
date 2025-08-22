@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import LoginButton from "./LoginButton";
+import { useAuth } from "./AuthContext";
+import { supabase } from "./supabaseClient";
 
 function Page2() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { session } = useAuth();
   const result = location.state?.result;
   let refText = result?.encouragement || "";
   let source = result?.source || "";
@@ -53,8 +56,33 @@ function Page2() {
   const now = typeof performance !== "undefined" ? performance.now() : Date.now();
   useEffect(() => {
     if (typedArr.length === 1 && startedAt === null) setStartedAt(now);
-    if (typedArr.length >= refArr.length && refArr.length > 0 && endedAt === null) setEndedAt(now);
-  }, [typedArr.length, refArr.length, startedAt, endedAt, now]);
+
+    if (typedArr.length >= refArr.length && refArr.length > 0 && endedAt === null) {
+      setEndedAt(now);
+
+      // Only save if the user is logged in and emotion is available
+      if (session && result?.emotion) {
+        const saveTranscription = async () => {
+          try {
+            const { error } = await supabase
+              .from('transcriptions')
+              .insert([{ content: refText, user_id: session.user.id, emotion: result.emotion }]);
+
+            if (error) {
+              throw error;
+            }
+            
+            console.log('필사 내용 및 감정이 성공적으로 저장되었습니다.');
+
+          } catch (error) {
+            console.error('필사 내용 저장 중 오류 발생:', error.message);
+          }
+        };
+
+        saveTranscription();
+      }
+    }
+  }, [typedArr.length, refArr.length, startedAt, endedAt, now, session, refText, result]);
 
   const elapsedSec = useMemo(() => {
     if (!startedAt) return 0;
