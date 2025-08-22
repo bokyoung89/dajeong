@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Supabase 설정이 안되어 있으면 로딩을 바로 끝내고 경고를 표시합니다.
-    if (supabaseUrl === 'https://vcnmedzrrqkeufrljlzt.supabase.co' || !supabaseUrl) {
+    if (!supabaseUrl) {
       console.warn('Supabase URL이 설정되지 않았습니다. .env 파일을 확인하거나 frontend/src/supabaseClient.js 파일을 수정해주세요.');
       setLoading(false);
       return;
