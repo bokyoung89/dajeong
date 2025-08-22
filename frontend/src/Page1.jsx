@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import LoginButton from "./LoginButton";
 
 function Page1() {
   const [text, setText] = useState("");
@@ -34,6 +35,7 @@ function Page1() {
 
   return (
     <div style={styles.container}>
+      <LoginButton />
       <h1 style={{ marginBottom: 0, fontFamily: "'Nanum Brush Script', cursive", fontSize: "5em" }}>오늘 당신의 하루는 어땠나요?</h1>
        <p style={{ marginTop: 10, fontSize: "50px", fontFamily: "'Nanum Brush Script', cursive" }}>How was your day today?</p>
       <textarea
@@ -51,6 +53,7 @@ function Page1() {
 
 const styles = {
   container: {
+    position: "relative", // 추가
     width: "100vw",
     height: "100vh",
     display: "flex",
@@ -60,7 +63,7 @@ const styles = {
     height: "100vh",
     fontFamily: "Arial, sans-serif",
     backgroundColor: "#3e513c",
-    Color: "#f3dbb9",
+    color: "#f3dbb9",
     padding: "20px",
   },
   textarea: {

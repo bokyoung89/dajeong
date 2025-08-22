@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import LoginButton from "./LoginButton";
 
 function Page2() {
   const location = useLocation();
@@ -87,6 +88,7 @@ function Page2() {
   if (!result) {
     return (
       <div style={styles.container}>
+        <LoginButton />
         <p>결과가 없습니다. 먼저 기분을 입력해주세요.</p>
         <button onClick={() => navigate("/")}>돌아가기</button>
       </div>
@@ -95,6 +97,7 @@ function Page2() {
 
   return (
     <div style={styles.container}>
+      <LoginButton />
       <p><strong>오늘 당신의 감정은:</strong> {result.emotion}입니다.</p>
 
       {/* 필사 입력 + 오버레이 + 가이드 통합 */}
@@ -224,6 +227,7 @@ function Page2() {
 // 스타일 정의
 const styles = {
   container: {
+    position: "relative", // 추가
     width: "100vw",
     height: "100vh",
     display: "flex",

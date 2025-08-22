@@ -44,6 +44,7 @@ def analyze_mood():
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": system_prompt},
+            
             {"role": "user", "content": user_prompt},
         ],
         max_tokens=200
