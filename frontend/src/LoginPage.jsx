@@ -21,17 +21,15 @@ function LoginPage() {
   };
 
   const handleKakaoLogin = async () => {
-    alert('카카오 로그인은 Supabase 설정 및 추가적인 백엔드 설정이 필요합니다. 현재는 Google 로그인만 지원됩니다.');
-    // Supabase에서 Kakao provider를 활성화하고, Kakao 개발자 콘솔에서 Redirect URI를 설정해야 합니다.
-    // const { error } = await supabase.auth.signInWithOAuth({
-    //   provider: 'kakao',
-    //   options: {
-    //     redirectTo: window.location.origin + '/myPage',
-    //   },
-    // });
-    // if (error) {
-    //   alert('Kakao 로그인 중 오류가 발생했습니다: ' + error.message);
-    // }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: {
+        redirectTo: "http://localhost:5173/",
+      },
+    });
+    if (error) {
+      alert('Kakao 로그인 중 오류가 발생했습니다: ' + error.message);
+    }
   };
 
   return (
