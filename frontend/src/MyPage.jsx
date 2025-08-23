@@ -1,7 +1,38 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { supabase } from './supabaseClient';
+
+// Helper component for expandable content
+const ExpandableCell = ({ content }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const contentRef = useRef(null);
+
+  useLayoutEffect(() => {
+    // Check for overflow when the component mounts or content changes
+    if (contentRef.current) {
+      const hasOverflow = contentRef.current.scrollWidth > contentRef.current.clientWidth;
+      setIsOverflowing(hasOverflow);
+    }
+  }, [content]);
+
+  return (
+    <div>
+      <p
+        ref={contentRef}
+        style={isExpanded ? styles.tdContentExpanded : styles.tdContentCollapsed}
+      >
+        {content}
+      </p>
+      {isOverflowing && (
+        <button onClick={() => setIsExpanded(!isExpanded)} style={styles.expandButton}>
+          {isExpanded ? '숨기기' : '더보기'}
+        </button>
+      )}
+    </div>
+  );
+};
 
 function MyPage() {
   const { session, loading } = useAuth();
@@ -112,9 +143,9 @@ function MyPage() {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.th}>날짜</th>
-                  <th style={styles.th}>감정</th>
-                  <th style={styles.th}>구절</th>
+                  <th style={{...styles.th, width: '15%'}}>날짜</th>
+                  <th style={{...styles.th, width: '15%'}}>감정</th>
+                  <th style={{...styles.th, width: '70%'}}>구절</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,7 +153,9 @@ function MyPage() {
                   <tr key={item.created_at}>
                     <td style={styles.td}>{new Date(item.created_at).toLocaleDateString()}</td>
                     <td style={styles.td}>{item.emotion}</td>
-                    <td style={{...styles.td, ...styles.tdContent}}>{item.content}</td>
+                    <td style={{...styles.td, textAlign: 'left'}}>
+                      <ExpandableCell content={item.content} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -236,6 +269,7 @@ const styles = {
     width: '100%',
     borderCollapse: 'collapse',
     color: '#f3dbb9',
+    tableLayout: 'fixed', // Crucial for stable column widths
   },
   th: {
     backgroundColor: 'rgba(243, 219, 185, 0.2)',
@@ -252,10 +286,25 @@ const styles = {
     textAlign: 'center',
     verticalAlign: 'middle',
   },
-  tdContent: {
-    textAlign: 'left',
+  tdContentCollapsed: {
+    margin: 0,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  tdContentExpanded: {
+    margin: 0,
     whiteSpace: 'pre-wrap',
-    wordBreak: 'break-all',
+    wordBreak: 'break-word', // Use break-word for better word wrapping
+  },
+  expandButton: {
+    background: 'none',
+    border: 'none',
+    color: '#a0a0a0', // Lighter color for less emphasis
+    textDecoration: 'underline',
+    cursor: 'pointer',
+    padding: '4px 0 0 0',
+    fontSize: '0.85em',
   },
   paginationContainer: {
     display: 'flex',
@@ -285,4 +334,5 @@ const styles = {
 };
 
 export default MyPage;
+
 
