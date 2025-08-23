@@ -27,11 +27,12 @@ function LoginButton() {
     <div style={styles.container}>
       {session && (
         <button onClick={() => navigate('/myPage')} style={styles.myPageButton}>
-          마이페이지
+          Library
         </button>
       )}
       <button onClick={handleAuthClick} style={styles.loginButton}>
-        {session ? '로그아웃' : '로그인'}
+        <span style={styles.separator}>| </span>
+        {session ? 'Logout' : 'Login'}
       </button>
     </div>
   );
@@ -39,32 +40,26 @@ function LoginButton() {
 
 const styles = {
   container: {
-    position: 'absolute',
-    top: '20px',
-    right: '20px',
     display: 'flex',
     gap: '10px',
-    zIndex: 1000,
   },
   loginButton: {
-    padding: '8px 15px',
-    fontSize: '1em',
+    padding: 0,
+    fontSize: '1.5em',
     cursor: 'pointer',
-    backgroundColor: '#f3dbb9',
-    color: '#3e513c',
+    backgroundColor: 'transparent',
+    color: '#f3dbb9',
     border: 'none',
-    borderRadius: '5px',
-    transition: 'background-color 0.3s ease',
+    fontFamily: "'Nanum Brush Script', cursive",
   },
   myPageButton: {
-    padding: '8px 15px',
-    fontSize: '1em',
+    padding: 0,
+    fontSize: '1.5em',
     cursor: 'pointer',
-    backgroundColor: '#d4e6c8',
-    color: '#3e513c',
+    backgroundColor: 'transparent',
+    color: '#f3dbb9',
     border: 'none',
-    borderRadius: '5px',
-    transition: 'background-color 0.3s ease',
+    fontFamily: "'Nanum Brush Script', cursive",
   },
 };
 

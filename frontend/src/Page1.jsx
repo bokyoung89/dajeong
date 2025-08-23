@@ -1,15 +1,22 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import LoginButton from "./LoginButton";
+import NavigationBar from "./NavigationBar";
+import { useAuth } from "./AuthContext";
 
 function Page1() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { session } = useAuth();
 
   const handleSubmit = async () => {
+    if (!session) {
+      navigate("/login");
+      return;
+    }
+
     if (text.trim() === "") {
-      alert("문장을 입력해주세요!");
+      alert("문장을 입력해주세요.");
       return;
     }
 
@@ -35,36 +42,43 @@ function Page1() {
 
   return (
     <div style={styles.container}>
-      <LoginButton />
-      <h1 style={{ marginBottom: 0, fontFamily: "'Nanum Brush Script', cursive", fontSize: "5em" }}>오늘 당신의 하루는 어땠나요?</h1>
-       <p style={{ marginTop: 10, fontSize: "50px", fontFamily: "'Nanum Brush Script', cursive" }}>How was your day today?</p>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="예) 피곤한 하루였어요."
-        style={styles.textarea}
-      />
-      <button onClick={handleSubmit} style={styles.button} disabled={loading}>
-        {loading ? "분석 중..." : "문장 추천 받기"}
-      </button>
+      <NavigationBar />
+      <div style={styles.content}>
+        <h1 style={{ marginBottom: 0, fontFamily: "'Nanum Brush Script', cursive", fontSize: "5em" }}>오늘 당신의 하루는 어땠나요?</h1>
+        <p style={{ marginTop: 10, fontSize: "50px", fontFamily: "'Nanum Brush Script', cursive" }}>How was your day today?</p>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="예) 피곤한 하루였어요."
+          style={styles.textarea}
+        />
+        <button onClick={handleSubmit} style={styles.button} disabled={loading}>
+          {loading ? "분석 중..." : "문장 추천 받기"}
+        </button>
+      </div>
     </div>
   );
 }
 
 const styles = {
   container: {
-    position: "relative", // 추가
     width: "100vw",
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    backgroundColor: "#3e513c",
+    color: "#f3dbb9",
+    fontFamily: "Arial, sans-serif",
+    boxSizing: "border-box",
+  },
+  content: {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    height: "100vh",
-    fontFamily: "Arial, sans-serif",
-    backgroundColor: "#3e513c",
-    color: "#f3dbb9",
+    flexGrow: 1,
     padding: "20px",
-    boxSizing: "border-box", 
   },
   textarea: {
     width: "800px",
@@ -73,19 +87,24 @@ const styles = {
     margin: "5px",
     fontSize: "16px",
     lineHeight: "25px",
-    backgroundColor: "#ffffff",      // 흰색 배경
-    borderRadius: "10px",            // 둥근 모서리
-    border: "1px solid #ccc",        // 테두리
-    outline: "none",                 // 포커스 시 기본 테두리 제거
-    color: "#545454", 
+    backgroundColor: "#ffffff",
+    borderRadius: "10px",
+    border: "1px solid #ccc",
+    outline: "none",
+    color: "#545454",
     textAlign: "center",
-    fontFamily: "Arial, sans-serif", 
+    fontFamily: "Arial, sans-serif",
   },
   button: {
-    padding: "10px 20px",
-    margin: "10px",
-    fontSize: "16px",
-    cursor: "pointer",
+    marginTop: '20px',
+    padding: '10px 20px',
+    fontSize: '1em',
+    cursor: 'pointer',
+    backgroundColor: 'transparent',
+    color: '#f3dbb9',
+    border: '1px solid #f3dbb9',
+    borderRadius: '8px',
+    transition: 'background-color 0.3s ease',
   },
 };
 

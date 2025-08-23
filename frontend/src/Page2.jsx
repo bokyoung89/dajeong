@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import LoginButton from "./LoginButton";
+import NavigationBar from "./NavigationBar";
 import { useAuth } from "./AuthContext";
 import { supabase } from "./supabaseClient";
 
@@ -116,138 +116,132 @@ function Page2() {
   if (!result) {
     return (
       <div style={styles.container}>
-        <LoginButton />
-        <p>결과가 없습니다. 먼저 기분을 입력해주세요.</p>
-        <button onClick={() => navigate("/")}>돌아가기</button>
+        <NavigationBar />
+        <div style={styles.content}>
+          <p>결과가 없습니다. 먼저 기분을 입력해주세요.</p>
+          <button onClick={() => navigate("/")}>돌아가기</button>
+        </div>
       </div>
     );
   }
 
   return (
     <div style={styles.container}>
-      <LoginButton />
-      <p><strong>오늘 당신의 감정은:</strong> {result.emotion}입니다.</p>
+      <NavigationBar />
+      <div style={styles.content}>
+        <p><strong>오늘 당신의 감정은:</strong> {result.emotion}입니다.</p>
 
-      {/* 필사 입력 + 오버레이 + 가이드 통합 */}
-      <div style={styles.quoteBox} onClick={focusInput}>
-        {showGuide && (
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              pointerEvents: "none",
-              borderRadius: 8,
-              backgroundImage:
-                "repeating-linear-gradient(transparent 0px, transparent 26px, rgba(99,102,241,0.08) 26px, rgba(99,102,241,0.08) 27px)",
-            }}
-          />
-        )}
-
-        {overlay ? (
-          <>
-            <div style={styles.refText}>{refText}</div>
+        {/* 필사 입력 + 오버레이 + 가이드 통합 */}
+        <div style={styles.quoteBox} onClick={focusInput}>
+          {showGuide && (
             <div
+              aria-hidden
               style={{
-                ...styles.refText,
                 position: "absolute",
-                top: 15,
-                left: 15,
-                right: 15,
+                inset: 0,
                 pointerEvents: "none",
+                borderRadius: 8,
+                backgroundImage:
+                  "repeating-linear-gradient(transparent 0px, transparent 26px, rgba(99,102,241,0.08) 26px, rgba(99,102,241,0.08) 27px)",
               }}
-            >
-              {typedArr.map((ch, i) => {
-                let cls = "";
-                if (refArr[i] === undefined) cls = "bg-yellow";
-                else if (ch === refArr[i]) cls = "green";
-                else cls = "red";
-                return <span key={i} style={highlightStyles[cls]}>{ch}</span>;
-              })}
-              {typedArr.length < refArr.length && (
-                <span style={styles.cursor}>
-                  {refArr[typedArr.length] === " " ? "\u00A0" : refArr[typedArr.length]}
-                </span>
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{ ...styles.refText, color: "#aaa" }}>{refText}</div>
-            <div style={styles.refText}>
-              {typedArr.map((ch, i) => {
-                let cls = "";
-                if (refArr[i] === undefined) cls = "bg-yellow";
-                else if (ch === refArr[i]) cls = "green";
-                else cls = "red";
-                return <span key={i} style={highlightStyles[cls]}>{ch}</span>;
-              })}
-              {typedArr.length < refArr.length && (
-                <span style={styles.cursor}>
-                  {refArr[typedArr.length] === " " ? "\u00A0" : refArr[typedArr.length]}
-                </span>
-              )}
-            </div>
-          </>
+            />
+          )}
+
+          {overlay ? (
+            <>
+              <div style={styles.refText}>{refText}</div>
+              <div
+                style={{
+                  ...styles.refText,
+                  position: "absolute",
+                  top: 15,
+                  left: 15,
+                  right: 15,
+                  pointerEvents: "none",
+                }}
+              >
+                {typedArr.map((ch, i) => {
+                  let cls = "";
+                  if (refArr[i] === undefined) cls = "bg-yellow";
+                  else if (ch === refArr[i]) cls = "green";
+                  else cls = "red";
+                  return <span key={i} style={highlightStyles[cls]}>{ch}</span>;
+                })}
+                {typedArr.length < refArr.length && (
+                  <span style={styles.cursor}>
+                    {refArr[typedArr.length] === " " ? "\u00A0" : refArr[typedArr.length]}
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ ...styles.refText, color: "#aaa" }}>{refText}</div>
+              <div style={styles.refText}>
+                {typedArr.map((ch, i) => {
+                  let cls = "";
+                  if (refArr[i] === undefined) cls = "bg-yellow";
+                  else if (ch === refArr[i]) cls = "green";
+                  else cls = "red";
+                  return <span key={i} style={highlightStyles[cls]}>{ch}</span>;
+                })}
+                {typedArr.length < refArr.length && (
+                  <span style={styles.cursor}>
+                    {refArr[typedArr.length] === " " ? "\u00A0" : refArr[typedArr.length]}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+
+          <textarea
+            ref={inputRef}
+            value={typed}
+            onChange={handleTyping}
+            style={styles.transparentInput}
+            spellCheck={false}
+          />
+        </div>
+
+        <hr style={{ width: "100%", borderTop: "1px solid #aaa", margin: "20px 0" }} />
+
+        {/* 출처 */}
+        {source && (
+          <div style={{ marginTop: 10, fontSize: "14px", color: "#ccc" }}>
+            <em>{source}</em>
+          </div>
         )}
 
-        <textarea
-          ref={inputRef}
-          value={typed}
-          onChange={handleTyping}
-          style={styles.transparentInput}
-          spellCheck={false}
-        />
-      </div>
-
-      <hr style={{ width: "90vw", maxWidth: "800px", borderTop: "1px solid #aaa", margin: "20px 0" }} />
-
-      {/* 출처 */}
-      {source && (
-        <div style={{ marginTop: 10, fontSize: "14px", color: "#ccc" }}>
-          <em>{source}</em>
+        {/* 옵션 */}
+        <div>
+          <button onClick={() => {
+            setTyped("");
+            setStartedAt(null);
+            setEndedAt(null);
+            focusInput();
+          }} style={styles.button}>
+            초기화
+          </button>
         </div>
-      )}
 
-      {/* 옵션 */}
-      <div style={{ marginTop: 20, marginBottom: 20 }}>
-        <label>
-          <input type="checkbox" checked={overlay} onChange={(e) => setOverlay(e.target.checked)} />
-          문장 위에 입력하기 (오버레이)
-        </label>
-        &nbsp;&nbsp;
-        <label>
-          <input type="checkbox" checked={showGuide} onChange={(e) => setShowGuide(e.target.checked)} />
-          가이드 라인 표시
-        </label>
-        &nbsp;&nbsp;
-        <button onClick={() => {
-          setTyped("");
-          setStartedAt(null);
-          setEndedAt(null);
-          focusInput();
-        }}>
-          초기화
+        {/* 결과 표시 */}
+        <div style={{ marginTop: 20, color: "#f3dbb9" }}>
+          <p>정확도: <strong>{accuracy}%</strong></p>
+          <p>진행도: <strong>{progress}%</strong> ({typedArr.length}/{refArr.length})</p>
+          <p>속도: <strong>{tajaSpeed}타</strong> {elapsedSec > 0 && <>· {Math.floor(elapsedSec)}초 경과</>}</p>
+        </div>
+
+        {/* 완료 메시지 */}
+        {typedArr.length >= refArr.length && refArr.length > 0 && (
+          <div style={{ marginTop: 20, padding: 10, backgroundColor: "#e6ffed", borderRadius: 6, color: "#057a55" }}>
+            🎉 오늘 하루도 정말 수고했어요!
+          </div>
+        )}
+
+        <button style={styles.button} onClick={() => navigate("/")}>
+          기분 다시 입력하기
         </button>
       </div>
-
-      {/* 결과 표시 */}
-      <div style={{ marginTop: 20, color: "#f3dbb9" }}>
-        <p>정확도: <strong>{accuracy}%</strong></p>
-        <p>진행도: <strong>{progress}%</strong> ({typedArr.length}/{refArr.length})</p>
-        <p>속도: <strong>{tajaSpeed}타</strong> {elapsedSec > 0 && <>· {Math.floor(elapsedSec)}초 경과</>}</p>
-      </div>
-
-      {/* 완료 메시지 */}
-      {typedArr.length >= refArr.length && refArr.length > 0 && (
-        <div style={{ marginTop: 20, padding: 10, backgroundColor: "#e6ffed", borderRadius: 6, color: "#057a55" }}>
-          🎉 오늘 하루도 정말 수고했어요!
-        </div>
-      )}
-
-      <button style={{ marginTop: 30 }} onClick={() => navigate("/")}>
-        기분 다시 입력하기
-      </button>
     </div>
   );
 }
@@ -255,26 +249,32 @@ function Page2() {
 // 스타일 정의
 const styles = {
   container: {
-    position: "relative", // 추가
     width: "100vw",
-    height: "100vh",
+    minHeight: "100vh",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "start",
-    padding: "40px 20px",
     backgroundColor: "#3e513c",
     color: "#f3dbb9",
     fontFamily: "Arial, sans-serif",
     boxSizing: "border-box",
   },
+  content: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    flexGrow: 1,
+    padding: "20px",
+    width: '100%',
+    maxWidth: '800px',
+  },
   quoteBox: {
     position: "relative",
-    margin: "40px",
+    margin: "20px 0",
     padding: "15px",
     borderRadius: "8px",
-    width: "100vw",
-    maxWidth: "800px",
+    width: "100%",
     minHeight: "200px",
     textAlign: "left",
     overflow: "hidden",
@@ -309,6 +309,17 @@ const styles = {
     display: "inline-block",
     borderBottom: "2px solid #6366f199",
     animation: "pulse 1s infinite",
+  },
+    button: {
+    marginTop: '20px',
+    padding: '10px 20px',
+    fontSize: '1em',
+    cursor: 'pointer',
+    backgroundColor: 'transparent',
+    color: '#f3dbb9',
+    border: '1px solid #f3dbb9',
+    borderRadius: '8px',
+    transition: 'background-color 0.3s ease',
   },
 };
 

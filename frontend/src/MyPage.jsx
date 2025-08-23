@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { supabase } from './supabaseClient';
+import NavigationBar from './NavigationBar';
 
 // Helper component for expandable content
 const ExpandableCell = ({ content }) => {
@@ -98,15 +99,6 @@ function MyPage() {
     setCurrentPage(1);
   }, [filter]);
 
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      alert('로그아웃 중 오류가 발생했습니다: ' + error.message);
-    } else {
-      navigate('/');
-    }
-  };
-
   const totalPages = Math.ceil(count / pageSize);
 
   if (loading) {
@@ -119,120 +111,90 @@ function MyPage() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.buttonContainer}>
-        <button onClick={() => navigate('/')} style={styles.homeButton}>
-          홈으로 돌아가기
-        </button>
-        <button onClick={handleLogout} style={styles.button}>
-          로그아웃
-        </button>
-      </div>
+      <NavigationBar />
+      <div style={styles.content}>
+        <h2 style={styles.subTitle}>나의 필사 기록</h2>
 
-      <h2 style={styles.subTitle}>나의 필사 기록</h2>
+        <div style={styles.filterContainer}>
+          <button onClick={() => setFilter('all')} style={filter === 'all' ? styles.activeFilter : styles.filterButton}>전체</button>
+          <button onClick={() => setFilter('weekly')} style={filter === 'weekly' ? styles.activeFilter : styles.filterButton}>주별</button>
+          <button onClick={() => setFilter('monthly')} style={filter === 'monthly' ? styles.activeFilter : styles.filterButton}>월별</button>
+          <button onClick={() => setFilter('yearly')} style={filter === 'yearly' ? styles.activeFilter : styles.filterButton}>연도별</button>
+        </div>
 
-      <div style={styles.filterContainer}>
-        <button onClick={() => setFilter('all')} style={filter === 'all' ? styles.activeFilter : styles.filterButton}>전체</button>
-        <button onClick={() => setFilter('weekly')} style={filter === 'weekly' ? styles.activeFilter : styles.filterButton}>주별</button>
-        <button onClick={() => setFilter('monthly')} style={filter === 'monthly' ? styles.activeFilter : styles.filterButton}>월별</button>
-        <button onClick={() => setFilter('yearly')} style={filter === 'yearly' ? styles.activeFilter : styles.filterButton}>연도별</button>
-      </div>
-
-      {fetchError && <p>{fetchError}</p>}
-      <div style={styles.tableContainer}>
-        {transcriptions.length > 0 ? (
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={{...styles.th, width: '15%'}}>날짜</th>
-                  <th style={{...styles.th, width: '15%'}}>감정</th>
-                  <th style={{...styles.th, width: '70%'}}>구절</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transcriptions.map((item) => (
-                  <tr key={item.created_at}>
-                    <td style={styles.td}>{new Date(item.created_at).toLocaleDateString()}</td>
-                    <td style={styles.td}>{item.emotion}</td>
-                    <td style={{...styles.td, textAlign: 'left'}}>
-                      <ExpandableCell content={item.content} />
-                    </td>
+        {fetchError && <p>{fetchError}</p>}
+        <div style={styles.tableContainer}>
+          {transcriptions.length > 0 ? (
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={{...styles.th, width: '15%'}}>날짜</th>
+                    <th style={{...styles.th, width: '15%'}}>감정</th>
+                    <th style={{...styles.th, width: '70%'}}>구절</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-        ) : (
-          <p style={{textAlign: 'center', marginTop: '20px'}}>해당 기간의 필사 기록이 없습니다.</p>
+                </thead>
+                <tbody>
+                  {transcriptions.map((item) => (
+                    <tr key={item.created_at}>
+                      <td style={styles.td}>{new Date(item.created_at).toLocaleDateString()}</td>
+                      <td style={styles.td}>{item.emotion}</td>
+                      <td style={{...styles.td, textAlign: 'left'}}>
+                        <ExpandableCell content={item.content} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+          ) : (
+            <p style={{textAlign: 'center', marginTop: '20px'}}>해당 기간의 필사 기록이 없습니다.</p>
+          )}
+        </div>
+        {totalPages > 1 && (
+          <div style={styles.paginationContainer}>
+            {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map(page => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                style={currentPage === page ? styles.activePageButton : styles.pageButton}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
         )}
       </div>
-      {totalPages > 1 && (
-        <div style={styles.paginationContainer}>
-          {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1).map(page => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              style={currentPage === page ? styles.activePageButton : styles.pageButton}
-            >
-              {page}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
 
 const styles = {
   container: {
-    position: 'relative',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'flex-start',
     minHeight: '100vh',
     width: '100vw',
     backgroundColor: '#3e513c',
     color: '#f3dbb9',
     fontFamily: 'Arial, sans-serif',
     boxSizing: 'border-box',
-    padding: '80px 20px 20px 20px',
   },
-  buttonContainer: {
-    position: 'absolute',
-    top: '20px',
-    right: '20px',
-    display: 'flex',
-    gap: '10px',
-  },
-  button: {
-    padding: '10px 20px',
-    fontSize: '1em',
-    cursor: 'pointer',
-    backgroundColor: '#f3dbb9',
-    color: '#3e513c',
-    border: 'none',
-    borderRadius: '8px',
-    transition: 'background-color 0.3s ease',
-  },
-  homeButton: {
-    padding: '10px 20px',
-    fontSize: '1em',
-    cursor: 'pointer',
-    backgroundColor: 'transparent',
-    color: '#f3dbb9',
-    border: '1px solid #f3dbb9',
-    borderRadius: '8px',
-    transition: 'background-color 0.3s ease',
+  content: {
+    width: '100%',
+    maxWidth: '900px',
+    padding: '20px',
   },
   subTitle: {
     fontSize: '1.8em',
     marginTop: '20px',
     marginBottom: '10px',
-    borderBottom: '1px solid #f3dbb9',
     paddingBottom: '10px',
     flexShrink: 0,
+    textAlign: 'center',
   },
   filterContainer: {
     display: 'flex',
+    justifyContent: 'center',
     gap: '10px',
     marginBottom: '20px',
   },
@@ -308,6 +270,7 @@ const styles = {
   },
   paginationContainer: {
     display: 'flex',
+    justifyContent: 'center',
     gap: '8px',
     marginTop: '20px',
   },
