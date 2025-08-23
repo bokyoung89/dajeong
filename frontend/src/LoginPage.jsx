@@ -54,11 +54,11 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: '100vh',
+    height: '100vh',
+    width: '100vw',
     backgroundColor: '#3e513c',
     color: '#f3dbb9',
     fontFamily: 'Arial, sans-serif',
-    padding: '20px',
   },
   title: {
     fontSize: '2.5em',
