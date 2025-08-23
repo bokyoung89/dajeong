@@ -1,12 +1,11 @@
-import json
 from flask import Flask, Response, request, jsonify, send_from_directory
-from openai import OpenAI
 from flask_cors import CORS
 import os
 import psycopg2
 import random
 from dotenv import load_dotenv
 import traceback
+from transformers import pipeline # transformers 임포트
 
 load_dotenv()
 
@@ -16,8 +15,13 @@ REACT_BUILD_DIR = os.path.join(os.path.dirname(__file__), "../frontend/dist")
 app = Flask(__name__, static_folder=REACT_BUILD_DIR, static_url_path="/")
 CORS(app)
 
-# OpenAI 클라이언트 (환경변수에서 키 가져오기 권장)
-client = OpenAI(api_key="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")
+# KoELECTRA 기반 감정 분석 모델 로드 (앱 시작 시 한 번만 로드)
+try:
+    emotion_analyzer = pipeline("sentiment-analysis", model="Jinuuuu/KoELECTRA_fine_tunning_emotion")
+    print("KoELECTRA emotion analysis model loaded successfully.")
+except Exception as e:
+    print(f"Error loading KoELECTRA emotion analysis model: {e}")
+    emotion_analyzer = None # 모델 로드 실패 시 None으로 설정
 
 # React 라우팅 처리 (SPA 지원)
 @app.route("/", defaults={"path": ""})
@@ -36,29 +40,28 @@ def analyze_mood():
     if not user_text:
         return jsonify({"error": "문장을 입력해주세요"}), 400
 
-    # 1. ChatGPT를 사용하여 감정 분석
-    system_prompt = "너는 사용자가 입력한 문장의 감정을 분석하는 AI야. 감정은 기쁨, 슬픔, 분노, 놀람, 혐오, 두려움 중 하나로 해줘."
-    user_prompt = f"""
-    다음 문장에 대한 감정을 분석하고, JSON 형태로 출력해줘. 
-    문장: {user_text}
-    출력형식: {{"emotion": "감정"}}
-    """
+    if not emotion_analyzer:
+        return jsonify({"error": "Emotion analysis model not loaded."}), 500
 
+    # 1. KoELECTRA 모델을 사용하여 감정 분석
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            max_tokens=50 # 감정만 필요하므로 토큰 제한
-        )
-        response_text = response.choices[0].message.content.strip()
-        chatgpt_result = json.loads(response_text.replace("'", '"'))
-        detected_emotion = chatgpt_result.get("emotion", "알 수 없음")
+        result = emotion_analyzer(user_text)
+        raw_emotion = result[0]['label']
+
+        # 모델 출력 감정을 DB 감정으로 매핑
+        emotion_mapping = {
+            "angry": "분노",
+            "happy": "기쁨",
+            "sad": "슬픔",
+            "anxious": "두려움",
+            "embarrassed": "놀람",
+            "heartache": "슬픔" # '상처'는 '슬픔'으로 매핑
+        }
+        detected_emotion = emotion_mapping.get(raw_emotion, "알 수 없음")
 
     except Exception as e:
-        print(f"ChatGPT emotion analysis error: {e}")
+        print(f"KoELECTRA emotion analysis error: {e}")
+        traceback.print_exc()
         detected_emotion = "알 수 없음" # 오류 발생 시 기본 감정 설정
 
     # 2. DB에서 해당 감정의 필사 문장 가져오기
