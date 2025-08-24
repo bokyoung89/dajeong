@@ -1,11 +1,12 @@
+import json
 from flask import Flask, Response, request, jsonify, send_from_directory
+from openai import OpenAI
 from flask_cors import CORS
 import os
 import psycopg2
 import random
 from dotenv import load_dotenv
 import traceback
-from transformers import pipeline # transformers 임포트
 
 load_dotenv()
 
@@ -15,13 +16,8 @@ REACT_BUILD_DIR = os.path.join(os.path.dirname(__file__), "../frontend/dist")
 app = Flask(__name__, static_folder=REACT_BUILD_DIR, static_url_path="/")
 CORS(app)
 
-# KoELECTRA 기반 감정 분석 모델 로드 (앱 시작 시 한 번만 로드)
-try:
-    emotion_analyzer = pipeline("sentiment-analysis", model="Jinuuuu/KoELECTRA_fine_tunning_emotion")
-    print("KoELECTRA emotion analysis model loaded successfully.")
-except Exception as e:
-    print(f"Error loading KoELECTRA emotion analysis model: {e}")
-    emotion_analyzer = None # 모델 로드 실패 시 None으로 설정
+# OpenAI 클라이언트 (환경변수에서 키 가져오기 권장)
+client = OpenAI(api_key="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")
 
 # React 라우팅 처리 (SPA 지원)
 @app.route("/", defaults={"path": ""})
@@ -40,31 +36,34 @@ def analyze_mood():
     if not user_text:
         return jsonify({"error": "문장을 입력해주세요"}), 400
 
-    if not emotion_analyzer:
-        return jsonify({"error": "Emotion analysis model not loaded."}), 500
+    # 1. ChatGPT를 사용하여 감정 및 상황 분석
+    system_prompt = "너는 사용자가 입력한 문장의 감정과 상황을 분석하는 AI야. 감정은 슬픔, 우울, 짜증, 무기력, 불안, 두려움, 외로움 중 하나 또는 두 가지로, 상황은 외로움, 친구, 가족, 실수, 시험, 직장, 취업, 건강, 실연 중 하나로 분석해줘."
+    user_prompt = f"""
+    다음 문장에 대한 감정과 상황을 분석하고, JSON 형태로 출력해줘.
+    문장: {user_text}
+    출력형식: {{"emotion": "감정", "situation": "상황"}}
+    """
 
-    # 1. KoELECTRA 모델을 사용하여 감정 분석
     try:
-        result = emotion_analyzer(user_text)
-        raw_emotion = result[0]['label']
-
-        # 모델 출력 감정을 DB 감정으로 매핑
-        emotion_mapping = {
-            "angry": "분노",
-            "happy": "기쁨",
-            "sad": "슬픔",
-            "anxious": "두려움",
-            "embarrassed": "놀람",
-            "heartache": "슬픔" # '상처'는 '슬픔'으로 매핑
-        }
-        detected_emotion = emotion_mapping.get(raw_emotion, "알 수 없음")
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            max_tokens=100  # 감정과 상황을 포함하므로 토큰 증가
+        )
+        response_text = response.choices[0].message.content.strip()
+        chatgpt_result = json.loads(response_text.replace("'", '"'))
+        detected_emotion = chatgpt_result.get("emotion", "알 수 없음")
+        detected_situation = chatgpt_result.get("situation", "알 수 없음")
 
     except Exception as e:
-        print(f"KoELECTRA emotion analysis error: {e}")
-        traceback.print_exc()
-        detected_emotion = "알 수 없음" # 오류 발생 시 기본 감정 설정
+        print(f"ChatGPT analysis error: {e}")
+        detected_emotion = "알 수 없음"
+        detected_situation = "알 수 없음"
 
-    # 2. DB에서 해당 감정의 필사 문장 가져오기
+    # 2. DB에서 해당 감정과 상황의 필사 문장 가져오기
     encouragement_data = {"sentence": "", "author": "", "title": ""}
     if detected_emotion != "알 수 없음":
         conn = None
@@ -73,9 +72,33 @@ def analyze_mood():
             conn = get_db_connection()
             if conn:
                 cur = conn.cursor()
-                cur.execute("SELECT sentence, author, title FROM contents WHERE emotion = %s", (detected_emotion,))
-                contents = cur.fetchall()
+
+                # 감정 문자열을 분리하여 각 감정에 대한 OR 조건 생성
+                emotions = [e.strip() for e in detected_emotion.replace(",", " ").split() if e.strip()]
                 
+                # 기본 쿼리
+                query = "SELECT sentence, author, title FROM contents WHERE "
+                params = []
+
+                # 감정 조건 추가 (OR)
+                emotion_conditions = " OR ".join(["emotion LIKE %s"] * len(emotions))
+                query += f"({emotion_conditions})"
+                params.extend([f'%{emotion}%' for emotion in emotions])
+
+                # 상황 조건 추가 (AND)
+                if detected_situation != "알 수 없음":
+                    query += " AND situation LIKE %s"
+                    params.append(f'%{detected_situation}%')
+
+                cur.execute(query, tuple(params))
+                contents = cur.fetchall()
+
+                # 만약 감정과 상황 모두에 일치하는 내용이 없으면 감정만으로 재검색
+                if not contents and detected_situation != "알 수 없음":
+                    query = "SELECT sentence, author, title FROM contents WHERE " + f"({emotion_conditions})"
+                    cur.execute(query, tuple([f'%{emotion}%' for emotion in emotions]))
+                    contents = cur.fetchall()
+
                 if contents:
                     selected_content = random.choice(contents)
                     encouragement_data = {
@@ -84,11 +107,12 @@ def analyze_mood():
                         "title": selected_content[2]
                     }
                 else:
-                    print(f"No content found for emotion: {detected_emotion}")
+                    print(f"No content found for emotion: {detected_emotion}, situation: {detected_situation}")
+
             else:
                 print("Database connection failed for mood analysis.")
         except Exception as e:
-            print(f"Error fetching content from DB for emotion {detected_emotion}: {e}")
+            print(f"Error fetching content from DB: {e}")
         finally:
             if cur:
                 cur.close()
@@ -131,8 +155,20 @@ def get_contents_by_emotion(emotion):
             return jsonify({"error": "데이터베이스 연결 실패"}), 500
 
         cur = conn.cursor()
-        # SQL Injection 방지를 위해 플레이스홀더 사용
-        cur.execute("SELECT sentence, author, title FROM contents WHERE emotion = %s", (emotion,))
+        
+        # 감정 문자열을 분리하여 각 감정에 대한 OR 조건 생성
+        emotions = [e.strip() for e in emotion.replace(",", " ").split() if e.strip()]
+        
+        if not emotions:
+            return jsonify({"error": "감정을 입력해주세요"}), 400
+
+        query = "SELECT sentence, author, title FROM contents WHERE "
+        emotion_conditions = " OR ".join(["emotion LIKE %s"] * len(emotions))
+        query += f"({emotion_conditions})"
+        
+        params = [f'%{em}%' for em in emotions]
+
+        cur.execute(query, tuple(params))
         contents = cur.fetchall()
         
         # 결과를 JSON 형식으로 변환
