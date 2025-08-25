@@ -8,9 +8,9 @@ function Page2() {
   const location = useLocation();
   const navigate = useNavigate();
   const { session } = useAuth();
-  const result = location.state?.result;
-  let refText = result?.encouragement || "";
-  let source = result?.source || "";
+  const [currentResult, setCurrentResult] = useState(location.state?.result);
+  let refText = currentResult?.encouragement || "";
+  let source = currentResult?.source || "";
 
   try {
     // Check if encouragement is a JSON string and parse it
@@ -29,6 +29,8 @@ function Page2() {
   const [startedAt, setStartedAt] = useState(null);
   const [endedAt, setEndedAt] = useState(null);
   const [showCompletePopup, setShowCompletePopup] = useState(false);
+  const [loading, setLoading] = useState(false); // Added loading state
+  const [displayedSentences, setDisplayedSentences] = useState([]); // Track displayed sentences
 
   const inputRef = useRef(null);
 
@@ -67,12 +69,12 @@ function Page2() {
       }, 300);
 
       // Only save if the user is logged in and emotion is available
-      if (session && result?.emotion) {
+      if (session && currentResult?.emotion) {
         const saveTranscription = async () => {
           try {
             const { error } = await supabase
               .from('transcriptions')
-              .insert([{ content: refText, user_id: session.user.id, emotion: result.emotion }]);
+              .insert([{ content: refText, user_id: session.user.id, emotion: currentResult.emotion }]);
 
             if (error) {
               throw error;
@@ -88,7 +90,7 @@ function Page2() {
         saveTranscription();
       }
     }
-  }, [typedArr.length, refArr.length, startedAt, endedAt, now, session, refText, result]);
+  }, [typedArr.length, refArr.length, startedAt, endedAt, now, session, refText, currentResult]);
 
   const elapsedSec = useMemo(() => {
     if (!startedAt) return 0;
@@ -111,7 +113,13 @@ function Page2() {
     setEndedAt(null);
     setShowCompletePopup(false);
     inputRef.current?.focus();
-  }, [refText]);
+    // Initialize displayedSentences with the current encouragement
+    if (currentResult?.encouragement) {
+      setDisplayedSentences([currentResult.encouragement]);
+    } else {
+      setDisplayedSentences([]); // Clear if no encouragement
+    }
+  }, [currentResult]); // Dependency changed to currentResult
 
   const handleTyping = (e) => {
     const input = e.target.value;
@@ -128,7 +136,57 @@ function Page2() {
     focusInput();
   };
 
-  if (!result) {
+  const fetchNewSentence = async (emotion) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/contents_by_emotion/${emotion}`, {
+        method: "GET",
+      });
+
+      const allSentences = await response.json();
+      console.log("새로운 문장 서버 응답:", allSentences);
+
+      if (allSentences && allSentences.length > 0) {
+        // Filter out already displayed sentences
+        const availableSentences = allSentences.filter(
+          (s) => !displayedSentences.includes(s.sentence)
+        );
+
+        if (availableSentences.length > 0) {
+          const randomIndex = Math.floor(Math.random() * availableSentences.length);
+          const selectedSentence = availableSentences[randomIndex];
+
+          const newResult = {
+            emotion: emotion,
+            encouragement: selectedSentence.sentence,
+            source: `${selectedSentence.title}, ${selectedSentence.author}`
+          };
+
+          setCurrentResult(newResult);
+          setDisplayedSentences((prev) => [...prev, selectedSentence.sentence]); // Add to displayed list
+          setTyped("");
+          setStartedAt(null);
+          setEndedAt(null);
+          setShowCompletePopup(false);
+          inputRef.current?.focus();
+        } else {
+          alert("더 이상 보여줄 새로운 문장이 없습니다. 처음부터 다시 시작합니다.");
+          setDisplayedSentences([]); // Reset displayed sentences if all have been shown
+          // Optionally, fetch a random one again or navigate back to Page1
+          // For now, just reset and let the user decide.
+          // If you want to fetch a random one again, you'd call fetchNewSentence(emotion) here without filtering.
+        }
+      } else {
+        alert("해당 감정에 대한 문장을 찾을 수 없습니다.");
+      }
+    } catch (err) {
+      alert("새로운 문장을 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!currentResult) {
     return (
       <div style={styles.container}>
         <NavigationBar />
@@ -144,7 +202,7 @@ function Page2() {
     <div style={styles.container}>
       <NavigationBar />
       <div style={styles.content}>
-        <p><strong>오늘 당신의 감정은:</strong> {result.emotion}입니다.</p>
+        <p><strong>오늘 당신의 감정은:</strong> {currentResult.emotion}입니다.</p>
 
         {/* 필사 입력 + 오버레이 + 가이드 통합 */}
         <div style={styles.quoteBox} onClick={focusInput}>
@@ -243,6 +301,10 @@ function Page2() {
           기분 다시 입력하기
         </button>
 
+        <button style={styles.button} onClick={() => setShowCompletePopup(true)}>
+          팝업 테스트
+        </button>
+
         {/* 완료 팝업 */}
         {showCompletePopup && (
           <div style={styles.popupOverlay} onClick={() => setShowCompletePopup(false)}>
@@ -252,7 +314,10 @@ function Page2() {
                 <p style={styles.popupMessage}>오늘 하루도 정말 수고했어요!</p>
                 <button 
                   style={styles.popupButton}
-                  onClick={() => setShowCompletePopup(false)}
+                  onClick={() => {
+                    setShowCompletePopup(false);
+                    fetchNewSentence(currentResult.emotion);
+                  }}
                 >
                   확인
                 </button>
