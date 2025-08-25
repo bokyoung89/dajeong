@@ -26,12 +26,11 @@ function LoginButton() {
   return (
     <div style={styles.container}>
       {session && (
-        <button onClick={() => navigate('/myPage')} style={styles.myPageButton}>
+        <button className="nav-button" onClick={() => navigate('/myPage')} style={styles.myPageButton}>
           Library
         </button>
       )}
-      <button onClick={handleAuthClick} style={styles.loginButton}>
-        <span style={styles.separator}>| </span>
+      <button className="nav-button" onClick={handleAuthClick} style={styles.loginButton}>
         {session ? 'Logout' : 'Login'}
       </button>
     </div>
@@ -41,25 +40,27 @@ function LoginButton() {
 const styles = {
   container: {
     display: 'flex',
-    gap: '10px',
+    gap: '20px', // Doubled gap
   },
   loginButton: {
     padding: 0,
-    fontSize: '1.5em',
+    fontSize: '20px',
+    lineHeight: '20px', // Added lineHeight
     cursor: 'pointer',
     backgroundColor: 'transparent',
-    color: '#f3dbb9',
+    // color: '#f3dbb9', // Removed color
     border: 'none',
-    fontFamily: "'Nanum Brush Script', cursive",
+    fontFamily: "'Markazi Text', serif",
   },
   myPageButton: {
     padding: 0,
-    fontSize: '1.5em',
+    fontSize: '20px',
+    lineHeight: '20px', // Added lineHeight
     cursor: 'pointer',
     backgroundColor: 'transparent',
-    color: '#f3dbb9',
+    // color: '#f3dbb9', // Removed color
     border: 'none',
-    fontFamily: "'Nanum Brush Script', cursive",
+    fontFamily: "'Markazi Text', serif",
   },
 };
 

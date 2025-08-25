@@ -44,16 +44,16 @@ function Page1() {
     <div style={styles.container}>
       <NavigationBar />
       <div style={styles.content}>
-        <h1 style={{ marginBottom: 0, fontFamily: "'Nanum Brush Script', cursive", fontSize: "5em" }}>오늘 당신의 하루는 어땠나요?</h1>
-        <p style={{ marginTop: 10, fontSize: "50px", fontFamily: "'Nanum Brush Script', cursive" }}>How was your day today?</p>
+        <p style={{ marginBottom: 10, fontFamily: "'Noto Serif Korean', serif", fontSize: "3em"}}>당신의 마음을 들려주세요.</p>
+        <p style={{ margin: 10, fontFamily: "'Noto Serif Korean', serif"}}>오늘 느꼈던 감정을 자유롭게 표현해보세요. 당신의 감정을 위로하는 따뜻한 문장을 전해드릴게요.</p>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="예) 피곤한 하루였어요."
+          placeholder="지금의 마음을 자유롭게 적어주세요."
           style={styles.textarea}
         />
         <button onClick={handleSubmit} style={styles.button} disabled={loading}>
-          {loading ? "분석 중..." : "문장 추천 받기"}
+          {loading ? "오늘의 감정은..." : "위로의 문장 받기"}
         </button>
       </div>
     </div>
@@ -79,16 +79,18 @@ const styles = {
     justifyContent: "center",
     flexGrow: 1,
     padding: "20px",
+    marginBottom : "150px",
   },
   textarea: {
     width: "800px",
     height: "25px",
     padding: "10px",
-    margin: "5px",
+    marginTop: "50px",
+    marginBottom : "20px",
     fontSize: "16px",
     lineHeight: "25px",
     backgroundColor: "#ffffff",
-    borderRadius: "10px",
+    borderRadius: "50px",
     border: "1px solid #ccc",
     outline: "none",
     color: "#545454",

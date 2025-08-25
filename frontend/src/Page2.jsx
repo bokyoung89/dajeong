@@ -28,6 +28,7 @@ function Page2() {
   const [showGuide, setShowGuide] = useState(true);
   const [startedAt, setStartedAt] = useState(null);
   const [endedAt, setEndedAt] = useState(null);
+  const [showCompletePopup, setShowCompletePopup] = useState(false);
 
   const inputRef = useRef(null);
 
@@ -59,6 +60,11 @@ function Page2() {
 
     if (typedArr.length >= refArr.length && refArr.length > 0 && endedAt === null) {
       setEndedAt(now);
+      
+      // Show completion popup with delay for smooth effect
+      setTimeout(() => {
+        setShowCompletePopup(true);
+      }, 300);
 
       // Only save if the user is logged in and emotion is available
       if (session && result?.emotion) {
@@ -103,6 +109,7 @@ function Page2() {
     setTyped("");
     setStartedAt(null);
     setEndedAt(null);
+    setShowCompletePopup(false);
     inputRef.current?.focus();
   }, [refText]);
 
@@ -111,6 +118,14 @@ function Page2() {
     if (input.length <= refText.length) {
       setTyped(input);
     }
+  };
+
+  const handleReset = () => {
+    setTyped("");
+    setStartedAt(null);
+    setEndedAt(null);
+    setShowCompletePopup(false);
+    focusInput();
   };
 
   if (!result) {
@@ -169,7 +184,7 @@ function Page2() {
                 })}
                 {typedArr.length < refArr.length && (
                   <span style={styles.cursor}>
-                    {refArr[typedArr.length] === " " ? "\u00A0" : refArr[typedArr.length]}
+                    {refArr[typedArr.length] === " " ? " " : refArr[typedArr.length]}
                   </span>
                 )}
               </div>
@@ -187,7 +202,7 @@ function Page2() {
                 })}
                 {typedArr.length < refArr.length && (
                   <span style={styles.cursor}>
-                    {refArr[typedArr.length] === " " ? "\u00A0" : refArr[typedArr.length]}
+                    {refArr[typedArr.length] === " " ? " " : refArr[typedArr.length]}
                   </span>
                 )}
               </div>
@@ -214,12 +229,7 @@ function Page2() {
 
         {/* 옵션 */}
         <div>
-          <button onClick={() => {
-            setTyped("");
-            setStartedAt(null);
-            setEndedAt(null);
-            focusInput();
-          }} style={styles.button}>
+          <button onClick={handleReset} style={styles.button}>
             초기화
           </button>
         </div>
@@ -231,17 +241,50 @@ function Page2() {
           <p>속도: <strong>{tajaSpeed}타</strong> {elapsedSec > 0 && <>· {Math.floor(elapsedSec)}초 경과</>}</p>
         </div>
 
-        {/* 완료 메시지 */}
-        {typedArr.length >= refArr.length && refArr.length > 0 && (
-          <div style={{ marginTop: 20, padding: 10, backgroundColor: "#e6ffed", borderRadius: 6, color: "#057a55" }}>
-            🎉 오늘 하루도 정말 수고했어요!
-          </div>
-        )}
-
         <button style={styles.button} onClick={() => navigate("/")}>
           기분 다시 입력하기
         </button>
+
+        <button style={styles.button} onClick={() => setShowCompletePopup(true)}>
+          팝업 테스트
+        </button>
+
+        {/* 완료 팝업 */}
+        {showCompletePopup && (
+          <div style={styles.popupOverlay} onClick={() => setShowCompletePopup(false)}>
+            <div style={styles.popup} onClick={(e) => e.stopPropagation()}>
+              <div style={styles.popupContent}>
+                <span style={styles.emoji}>😸</span>
+                <p style={styles.popupMessage}>오늘 하루도 정말 수고했어요!</p>
+                <button 
+                  style={styles.popupButton}
+                  onClick={() => setShowCompletePopup(false)}
+                >
+                  확인
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      <style>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -310,7 +353,7 @@ const styles = {
     borderBottom: "2px solid #6366f199",
     animation: "pulse 1s infinite",
   },
-    button: {
+  button: {
     marginTop: '20px',
     padding: '10px 20px',
     fontSize: '1em',
@@ -320,6 +363,59 @@ const styles = {
     border: '1px solid #f3dbb9',
     borderRadius: '8px',
     transition: 'background-color 0.3s ease',
+  },
+  popupOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    animation: 'fadeIn 0.3s ease-out',
+  },
+  popup: {
+    backgroundColor: '#3e513c',
+    borderRadius: '16px',
+    padding: '0',
+    maxWidth: '400px',
+    width: '90%',
+    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+    animation: 'fadeIn 0.4s ease-out',
+    overflow: 'hidden',
+    border: '1px solid #f3dbb9',
+  },
+  popupContent: {
+    padding: '40px 30px',
+    textAlign: 'center',
+    color: '#f3dbb9',
+  },
+  emoji: {
+    fontSize: '30px',
+    display: 'block',
+    marginBottom: '20px',
+    animation: 'fadeIn 0.6s ease-out',
+  },
+  popupMessage: {
+    fontSize: '18px',
+    margin: '0 0 30px 0',
+    color: '#f3dbb9',
+    lineHeight: '1.5',
+    fontFamily: 'Arial, sans-serif',
+  },
+  popupButton: {
+    backgroundColor: '#3e513c',
+    border: '1px solid #f3dbb9',
+    color: '#f3dbb9',
+    borderRadius: '8px',
+    padding: '12px 24px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'background-color 0.3s ease, transform 0.1s ease',
   },
 };
 
