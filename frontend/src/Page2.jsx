@@ -237,16 +237,10 @@ function Page2() {
         {/* 결과 표시 */}
         <div style={{ marginTop: 20, color: "#f3dbb9" }}>
           <p>정확도: <strong>{accuracy}%</strong></p>
-          <p>진행도: <strong>{progress}%</strong> ({typedArr.length}/{refArr.length})</p>
-          <p>속도: <strong>{tajaSpeed}타</strong> {elapsedSec > 0 && <>· {Math.floor(elapsedSec)}초 경과</>}</p>
         </div>
 
         <button style={styles.button} onClick={() => navigate("/")}>
           기분 다시 입력하기
-        </button>
-
-        <button style={styles.button} onClick={() => setShowCompletePopup(true)}>
-          팝업 테스트
         </button>
 
         {/* 완료 팝업 */}
