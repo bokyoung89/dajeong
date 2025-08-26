@@ -119,9 +119,9 @@ const styles = {
     marginBottom : "150px",
   },
   textarea: {
-    width: "800px",
+    width: "700px",
     height: "25px",
-    padding: "10px 20px",
+    padding: "10px 40px",
     marginTop: "50px",
     marginBottom : "20px",
     fontSize: "16px",
@@ -144,6 +144,25 @@ const styles = {
     border: '1px solid #f3dbb9',
     borderRadius: '8px',
     transition: 'background-color 0.3s ease',
+  },
+  startButtonContainer: {
+    marginTop: '50px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '800px',
+    height: '25px',
+    backgroundColor: '#ffffff',
+    borderRadius: '50px',
+    cursor: 'pointer',
+    transition: 'background-color 0.3s ease',
+  },
+  startButtonText: {
+    color: '#545454',
+    fontSize: '16px',
+    fontFamily: 'Arial, sans-serif',
+    lineHeight: '25px',
+    margin: 0,
   },
 };
 
@@ -180,6 +199,10 @@ styleSheet.innerHTML = `
     text-align: left;
     font-family: Arial, sans-serif;
     line-height: 25px;
+  }
+
+  .startButtonContainer:hover {
+    background-color: #f0f0f0;
   }
 `;
 document.head.appendChild(styleSheet);
