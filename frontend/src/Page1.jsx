@@ -45,7 +45,7 @@ function Page1() {
       <NavigationBar />
       <div style={styles.content}>
         <p style={{ marginBottom: 10, fontFamily: "'Noto Serif Korean', serif", fontSize: "3em"}}>당신의 마음을 들려주세요.</p>
-        <p style={{ margin: 10, fontFamily: "'Noto Serif Korean', serif"}}>오늘 느꼈던 감정을 자유롭게 표현해보세요. 당신의 감정을 위로하는 따뜻한 문장을 전해드릴게요.</p>
+        <p style={{ margin: 10, fontFamily: "'Noto Serif Korean', serif"}}>오늘 느낀 감정을 적어주시면, 따뜻한 위로의 말을 건네드릴게요.</p>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
