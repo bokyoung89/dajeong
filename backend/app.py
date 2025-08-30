@@ -17,7 +17,7 @@ app = Flask(__name__, static_folder=REACT_BUILD_DIR, static_url_path="/")
 CORS(app)
 
 # OpenAI 클라이언트 (환경변수에서 키 가져오기 권장)
-client = OpenAI(api_key="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")
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 # React 라우팅 처리 (SPA 지원)
 @app.route("/", defaults={"path": ""})
