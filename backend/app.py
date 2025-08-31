@@ -37,21 +37,17 @@ def analyze_mood():
         return jsonify({"error": "문장을 입력해주세요"}), 400
 
     # 1. ChatGPT를 사용하여 감정 및 상황 분석
-    system_prompt = "너는 사용자가 입력한 문장의 감정과 상황을 분석하는 AI야. 감정은 기쁨, 슬픔, 우울, 짜증, 무기력, 불안, 두려움, 외로움 중 하나 또는 두 가지로, 상황은 외로움, 친구, 가족, 실수, 시험, 직장, 취업, 건강, 실연 중 하나로 분석해줘."
-    user_prompt = f"""
-    다음 문장에 대한 감정과 상황을 분석하고, JSON 형태로 출력해줘.
-    문장: {user_text}
-    출력형식: {{"emotion": "감정", "situation": "상황"}}
-    """
+    system_prompt = "문장을 감정 최대 2개(기쁨, 슬픔, 우울, 짜증, 무기력, 불안, 두려움, 외로움)와 상황(외로움, 친구, 가족, 실수, 시험, 직장, 취업, 건강, 실연)으로 분석. JSON 출력."
+    user_prompt = f'문장: {user_text} 출력: {{"emotion": "", "situation": ""}}'
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            max_tokens=100  # 감정과 상황을 포함하므로 토큰 증가
+            max_tokens=20
         )
         response_text = response.choices[0].message.content.strip()
         chatgpt_result = json.loads(response_text.replace("'", '"'))
