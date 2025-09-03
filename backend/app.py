@@ -45,16 +45,17 @@ EMOTION_KEYWORDS = {
     "희망": "희망, 긍정, 용기, 극복",
     "슬픔": "슬픔, 비참함, 눈물, 상실",
     "우울": "우울, 침울함, 공허함",
-    "짜증": "짜증, 화남, 분노, 불만, 역정",
+    "짜증": "짜증, 불만",
     "무기력": "무기력, 지침, 피곤함, 번아웃",
     "불안": "불안, 걱정, 초조함, 긴장",
     "두려움": "두려움, 공포, 무서움, 겁",
     "외로움": "외로움, 고독, 쓸쓸함, 혼자",
+    "분노": "분노, 화남, 역정"
 }
 
 SITUATION_KEYWORDS = {
     "외로움": "외로움, 고독, 혼자 있는 시간",
-    "친구": "친구, 우정, 지인",
+    "친구": "친구, 우정, 지인, 친구관계",
     "가족": "가족, 부모님, 형제, 자매, 아이, 조카, 배우자",
     "실수": "실수, 잘못, 실패, 후회",
     "시험": "시험, 공부, 성적, 합격, 불합격",
@@ -103,6 +104,13 @@ def map_to_category(term, category_embeddings, canonical_keyword_dict):
     if term in category_embeddings:
         return term
 
+    # 하위 키워드와 정확히 일치하는지 확인
+    for category, keywords in canonical_keyword_dict.items():
+        keyword_list = [kw.strip() for kw in keywords.split(',')]
+        if term in keyword_list:
+            print(f"'{term}' -> '{category}' (으)로 직접 매핑되었습니다.")
+            return category
+
     try:
         term_embedding = get_embedding(term)
     except Exception as e:
@@ -120,6 +128,7 @@ def map_to_category(term, category_embeddings, canonical_keyword_dict):
 
     # 가장 유사도가 높은 카테고리 반환
     best_match = max(similarities, key=similarities.get)
+    print(f"'{similarities}' -> '{best_match}' (으)로 매핑되었습니다.")
     print(f"'{term}' -> '{best_match}' (으)로 매핑되었습니다.")
     return best_match
 
@@ -162,6 +171,8 @@ def analyze_mood():
 
         unmapped_emotion = chatgpt_result.get("emotion", "알 수 없음")
         unmapped_situation = chatgpt_result.get("situation", "알 수 없음")
+        
+        print(f"chatGPT 1차 분석: 감정 ('{unmapped_emotion}'), 상황 ('{unmapped_situation}')")
 
         # 임베딩을 사용하여 결과값을 표준 카테고리로 매핑
         detected_emotion = map_to_category(unmapped_emotion, EMOTION_EMBEDDINGS, EMOTION_KEYWORDS)
@@ -233,6 +244,7 @@ def analyze_mood():
     # 최종 결과 반환
     return jsonify({
         "emotion": detected_emotion,
+        "situation": detected_situation,
         "encouragement": encouragement_data["sentence"],
         "source": f"{encouragement_data['title']}, {encouragement_data['author']}" if encouragement_data["title"] else ""
     })
@@ -260,6 +272,9 @@ def get_db_connection():
 # 감정에 따른 필사 문장 조회 API
 @app.route("/api/contents_by_emotion/<emotion>", methods=["GET"])
 def get_contents_by_emotion(emotion):
+    situation = request.args.get("situation")
+    print(f"--- 새로운 문장 요청: 감정='{emotion}', 상황='{situation}' ---")
+
     conn = None
     cur = None
     try:
@@ -276,13 +291,26 @@ def get_contents_by_emotion(emotion):
             return jsonify({"error": "감정을 입력해주세요"}), 400
 
         query = "SELECT sentence, author, title FROM contents WHERE "
+        params = []
+
+        # 감정 조건 추가 (OR)
         emotion_conditions = " OR ".join(["emotion LIKE %s"] * len(emotions))
         query += f"({emotion_conditions})"
-        
-        params = [f'%{em}%' for em in emotions]
+        params.extend([f'%{em}%' for em in emotions])
+
+        # 상황 조건 추가 (AND)
+        if situation and situation != "알 수 없음":
+            query += " AND situation LIKE %s"
+            params.append(f'%{situation}%')
 
         cur.execute(query, tuple(params))
         contents = cur.fetchall()
+
+        # 만약 감정과 상황 모두에 일치하는 내용이 없으면 감정만으로 재검색
+        if not contents and situation and situation != "알 수 없음":
+            query = "SELECT sentence, author, title FROM contents WHERE " + f"({emotion_conditions})"
+            cur.execute(query, tuple([f'%{em}%' for em in emotions]))
+            contents = cur.fetchall()
         
         # 결과를 JSON 형식으로 변환
         result = []

@@ -136,10 +136,15 @@ function Page2() {
     focusInput();
   };
 
-  const fetchNewSentence = async (emotion) => {
+  const fetchNewSentence = async (emotion, situation) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/contents_by_emotion/${emotion}`, {
+      let url = `/api/contents_by_emotion/${encodeURIComponent(emotion)}`;
+      if (situation) {
+        url += `?situation=${encodeURIComponent(situation)}`;
+      }
+
+      const response = await fetch(url, {
         method: "GET",
       });
 
@@ -158,12 +163,13 @@ function Page2() {
 
           const newResult = {
             emotion: emotion,
+            situation: situation, // Keep the situation
             encouragement: selectedSentence.sentence,
             source: `${selectedSentence.title}, ${selectedSentence.author}`
           };
 
           setCurrentResult(newResult);
-          setDisplayedSentences((prev) => [...prev, selectedSentence.sentence]); // Add to displayed list
+          setDisplayedSentences((prev) => [...prev, selectedSentence.sentence]);
           setTyped("");
           setStartedAt(null);
           setEndedAt(null);
@@ -171,10 +177,7 @@ function Page2() {
           inputRef.current?.focus();
         } else {
           alert("더 이상 보여줄 새로운 문장이 없습니다. 처음부터 다시 시작합니다.");
-          setDisplayedSentences([]); // Reset displayed sentences if all have been shown
-          // Optionally, fetch a random one again or navigate back to Page1
-          // For now, just reset and let the user decide.
-          // If you want to fetch a random one again, you'd call fetchNewSentence(emotion) here without filtering.
+          setDisplayedSentences([]);
         }
       } else {
         alert("해당 감정에 대한 문장을 찾을 수 없습니다.");
@@ -316,7 +319,7 @@ function Page2() {
                   style={styles.popupButton}
                   onClick={() => {
                     setShowCompletePopup(false);
-                    fetchNewSentence(currentResult.emotion);
+                    fetchNewSentence(currentResult.emotion, location.state?.result?.situation);
                   }}
                 >
                   확인
