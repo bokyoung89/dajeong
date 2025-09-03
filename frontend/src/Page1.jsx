@@ -81,14 +81,14 @@ function Page1() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="지금의 마음을 자유롭게 적어주세요."
-              style={styles.textarea}
+              className="textarea-shadcn"
             />
-            <button onClick={handleSubmit} style={styles.button} disabled={loading}>
+            <button onClick={handleSubmit} className="button-shadcn-outline" disabled={loading}>
               {loading ? "오늘의 감정은..." : "위로의 문장 받기"}
             </button>
           </>
         ) : (
-          <button onClick={() => navigate("/login")} style={styles.button}>
+          <button onClick={() => navigate("/login")} className="button-shadcn-outline">
             무료로 시작하기
           </button>
         )}
@@ -117,52 +117,6 @@ const styles = {
     flexGrow: 1,
     padding: "20px",
     marginBottom : "150px",
-  },
-  textarea: {
-    width: "700px",
-    height: "25px",
-    padding: "10px 40px",
-    marginTop: "50px",
-    marginBottom : "20px",
-    fontSize: "16px",
-    lineHeight: "25px",
-    backgroundColor: "#ffffff",
-    borderRadius: "50px",
-    border: "1px solid #ccc",
-    outline: "none",
-    color: "#545454",
-    textAlign: "left",
-    fontFamily: "Arial, sans-serif",
-  },
-  button: {
-    marginTop: '20px',
-    padding: '10px 20px',
-    fontSize: '1em',
-    cursor: 'pointer',
-    backgroundColor: 'transparent',
-    color: '#f3dbb9',
-    border: '1px solid #f3dbb9',
-    borderRadius: '8px',
-    transition: 'background-color 0.3s ease',
-  },
-  startButtonContainer: {
-    marginTop: '50px',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '800px',
-    height: '25px',
-    backgroundColor: '#ffffff',
-    borderRadius: '50px',
-    cursor: 'pointer',
-    transition: 'background-color 0.3s ease',
-  },
-  startButtonText: {
-    color: '#545454',
-    fontSize: '16px',
-    fontFamily: 'Arial, sans-serif',
-    lineHeight: '25px',
-    margin: 0,
   },
 };
 
@@ -194,15 +148,56 @@ styleSheet.innerHTML = `
     opacity: 0;
   }
 
-  textarea::placeholder {
-    color: #cbc2b9;
-    text-align: left;
-    font-family: Arial, sans-serif;
-    line-height: 25px;
+  .textarea-shadcn {
+    width: 700px;
+    min-height: 80px;
+    padding: 12px 20px;
+    margin-top: 50px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: #f3dbb9;
+    border: 1px solid #f3dbb9;
+    border-radius: 0.5rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    font-family: 'Noto Serif Korean', serif;
   }
 
-  .startButtonContainer:hover {
-    background-color: #f0f0f0;
+  .textarea-shadcn:focus {
+    border-color: #f3dbb9;
+    box-shadow: 0 0 0 2px rgba(243, 219, 185, 0.5);
+  }
+
+  .textarea-shadcn::placeholder {
+    color: #a39b8b;
+    font-family: 'Noto Serif Korean', serif;
+  }
+
+  .button-shadcn-outline {
+    margin-top: 20px;
+    padding: 10px 25px;
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    background-color: transparent;
+    color: #f3dbb9;
+    border: 1px solid #f3dbb9;
+    border-radius: 0.5rem;
+    outline: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .button-shadcn-outline:hover {
+    background-color: #f3dbb9;
+    color: #3e513c;
+    border-color: #f3dbb9;
+  }
+
+  .button-shadcn-outline:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 `;
 document.head.appendChild(styleSheet);
