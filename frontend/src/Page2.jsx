@@ -29,8 +29,9 @@ function Page2() {
   const [startedAt, setStartedAt] = useState(null);
   const [endedAt, setEndedAt] = useState(null);
   const [showCompletePopup, setShowCompletePopup] = useState(false);
-  const [loading, setLoading] = useState(false); // Added loading state
-  const [displayedSentences, setDisplayedSentences] = useState([]); // Track displayed sentences
+  const [showAllDonePopup, setShowAllDonePopup] = useState(false); // New state for the 'all done' popup
+  const [loading, setLoading] = useState(false);
+  const [displayedSentences, setDisplayedSentences] = useState([]);
 
   const inputRef = useRef(null);
 
@@ -63,12 +64,10 @@ function Page2() {
     if (typedArr.length >= refArr.length && refArr.length > 0 && endedAt === null) {
       setEndedAt(now);
       
-      // Show completion popup with delay for smooth effect
       setTimeout(() => {
         setShowCompletePopup(true);
       }, 300);
 
-      // Only save if the user is logged in and emotion is available
       if (session && currentResult?.emotion) {
         const saveTranscription = async () => {
           try {
@@ -76,17 +75,12 @@ function Page2() {
               .from('transcriptions')
               .insert([{ content: refText, user_id: session.user.id, emotion: currentResult.emotion }]);
 
-            if (error) {
-              throw error;
-            }
-            
+            if (error) throw error;
             console.log('필사 내용 및 감정이 성공적으로 저장되었습니다.');
-
           } catch (error) {
             console.error('필사 내용 저장 중 오류 발생:', error.message);
           }
         };
-
         saveTranscription();
       }
     }
@@ -100,26 +94,27 @@ function Page2() {
 
   const tajaSpeed = useMemo(() => {
     if (elapsedSec <= 0) return 0;
-    // 분당 타수 계산
     return Math.round((typedArr.length / elapsedSec) * 60);
   }, [typedArr.length, elapsedSec]);
 
-  // 필사 영역 포커싱
   const focusInput = () => inputRef.current?.focus();
 
+  // Initialize displayedSentences only when the component mounts with initial data
+  useEffect(() => {
+    const initialResult = location.state?.result;
+    if (initialResult?.encouragement) {
+      setDisplayedSentences([initialResult.encouragement]);
+    }
+  }, [location.state?.result]);
+
+  // Reset typing state when the sentence changes
   useEffect(() => {
     setTyped("");
     setStartedAt(null);
     setEndedAt(null);
     setShowCompletePopup(false);
-    inputRef.current?.focus();
-    // Initialize displayedSentences with the current encouragement
-    if (currentResult?.encouragement) {
-      setDisplayedSentences([currentResult.encouragement]);
-    } else {
-      setDisplayedSentences([]); // Clear if no encouragement
-    }
-  }, [currentResult]); // Dependency changed to currentResult
+    focusInput();
+  }, [currentResult]);
 
   const handleTyping = (e) => {
     const input = e.target.value;
@@ -144,15 +139,10 @@ function Page2() {
         url += `?situation=${encodeURIComponent(situation)}`;
       }
 
-      const response = await fetch(url, {
-        method: "GET",
-      });
-
+      const response = await fetch(url, { method: "GET" });
       const allSentences = await response.json();
-      console.log("새로운 문장 서버 응답:", allSentences);
 
       if (allSentences && allSentences.length > 0) {
-        // Filter out already displayed sentences
         const availableSentences = allSentences.filter(
           (s) => !displayedSentences.includes(s.sentence)
         );
@@ -163,21 +153,15 @@ function Page2() {
 
           const newResult = {
             emotion: emotion,
-            situation: situation, // Keep the situation
+            situation: situation,
             encouragement: selectedSentence.sentence,
             source: `${selectedSentence.title}, ${selectedSentence.author}`
           };
 
           setCurrentResult(newResult);
           setDisplayedSentences((prev) => [...prev, selectedSentence.sentence]);
-          setTyped("");
-          setStartedAt(null);
-          setEndedAt(null);
-          setShowCompletePopup(false);
-          inputRef.current?.focus();
         } else {
-          alert("더 이상 보여줄 새로운 문장이 없습니다. 처음부터 다시 시작합니다.");
-          setDisplayedSentences([]);
+          setShowAllDonePopup(true); // Show custom popup instead of alert
         }
       } else {
         alert("해당 감정에 대한 문장을 찾을 수 없습니다.");
@@ -195,7 +179,7 @@ function Page2() {
         <NavigationBar />
         <div style={styles.content}>
           <p>결과가 없습니다. 먼저 기분을 입력해주세요.</p>
-          <button onClick={() => navigate("/")}>돌아가기</button>
+          <button onClick={() => navigate("/")} className="button-shadcn-outline">돌아가기</button>
         </div>
       </div>
     );
@@ -207,7 +191,6 @@ function Page2() {
       <div style={styles.content}>
         <p><strong>오늘 당신의 감정은:</strong> {currentResult.emotion}입니다.</p>
 
-        {/* 필사 입력 + 오버레이 + 가이드 통합 */}
         <div style={styles.quoteBox} onClick={focusInput}>
           {showGuide && (
             <div
@@ -281,30 +264,27 @@ function Page2() {
 
         <hr style={{ width: "100%", borderTop: "1px solid #aaa", margin: "20px 0" }} />
 
-        {/* 출처 */}
         {source && (
           <div style={{ marginTop: 10, fontSize: "14px", color: "#ccc" }}>
             <em>{source}</em>
           </div>
         )}
 
-        {/* 옵션 */}
         <div>
-          <button onClick={handleReset} style={styles.button}>
+          <button onClick={handleReset} className="button-shadcn-outline">
             초기화
           </button>
         </div>
 
-        {/* 결과 표시 */}
         <div style={{ marginTop: 20, color: "#f3dbb9" }}>
           <p>정확도: <strong>{accuracy}%</strong></p>
         </div>
 
-        <button style={styles.button} onClick={() => navigate("/")}>
+        <button className="button-shadcn-outline" onClick={() => navigate("/")}>
           기분 다시 입력하기
         </button>
 
-        <button style={styles.button} onClick={() => setShowCompletePopup(true)}>
+        <button className="button-shadcn-outline" onClick={() => setShowCompletePopup(true)}>
           팝업 테스트
         </button>
 
@@ -316,7 +296,7 @@ function Page2() {
                 <span style={styles.emoji}>😸</span>
                 <p style={styles.popupMessage}>오늘 하루도 정말 수고했어요!</p>
                 <button 
-                  style={styles.popupButton}
+                  className="button-shadcn-outline"
                   onClick={() => {
                     setShowCompletePopup(false);
                     fetchNewSentence(currentResult.emotion, location.state?.result?.situation);
@@ -328,30 +308,72 @@ function Page2() {
             </div>
           </div>
         )}
+
+        {/* 모든 문장 완료 팝업 */}
+        {showAllDonePopup && (
+          <div style={styles.popupOverlay} onClick={() => setShowAllDonePopup(false)}>
+            <div style={styles.popup} onClick={(e) => e.stopPropagation()}>
+              <div style={styles.popupContent}>
+                <span style={styles.emoji}>🎉</span>
+                <p style={styles.popupMessage}>
+                  오늘의 위로 문장을 모두 만나셨습니다. <br />
+                  이제 새로운 마음으로 다시 시작해볼까요?
+                </p>
+                <button 
+                  className="button-shadcn-outline"
+                  onClick={() => {
+                    setShowAllDonePopup(false);
+                    navigate("/");
+                  }}
+                >
+                  다시 시작하기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <style>{`
         @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.8) translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
+          from { opacity: 0; transform: scale(0.8) translateY(20px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.3; }
         }
+
+        .button-shadcn-outline {
+          margin-top: 20px;
+          padding: 10px 25px;
+          font-size: 1em;
+          font-weight: 500;
+          cursor: pointer;
+          background-color: transparent;
+          color: #f3dbb9;
+          border: 1px solid #f3dbb9;
+          border-radius: 0.5rem;
+          outline: none;
+          transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .button-shadcn-outline:hover {
+          background-color: #f3dbb9;
+          color: #3e513c;
+          border-color: #f3dbb9;
+        }
+
+        .button-shadcn-outline:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
       `}</style>
     </div>
   );
 }
 
-// 스타일 정의
 const styles = {
   container: {
     width: "100vw",
@@ -415,17 +437,6 @@ const styles = {
     borderBottom: "2px solid #6366f199",
     animation: "pulse 1s infinite",
   },
-  button: {
-    marginTop: '20px',
-    padding: '10px 20px',
-    fontSize: '1em',
-    cursor: 'pointer',
-    backgroundColor: 'transparent',
-    color: '#f3dbb9',
-    border: '1px solid #f3dbb9',
-    borderRadius: '8px',
-    transition: 'background-color 0.3s ease',
-  },
   popupOverlay: {
     position: 'fixed',
     top: 0,
@@ -467,17 +478,6 @@ const styles = {
     color: '#f3dbb9',
     lineHeight: '1.5',
     fontFamily: 'Arial, sans-serif',
-  },
-  popupButton: {
-    backgroundColor: '#3e513c',
-    border: '1px solid #f3dbb9',
-    color: '#f3dbb9',
-    borderRadius: '8px',
-    padding: '12px 24px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'background-color 0.3s ease, transform 0.1s ease',
   },
 };
 
