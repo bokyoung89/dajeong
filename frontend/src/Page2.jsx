@@ -144,7 +144,7 @@ function Page2() {
 
       if (allSentences && allSentences.length > 0) {
         const availableSentences = allSentences.filter(
-          (s) => !displayedSentences.includes(s.sentence)
+          (s) => !displayedSentences.includes(s.sentence.trim())
         );
 
         if (availableSentences.length > 0) {
@@ -159,9 +159,15 @@ function Page2() {
           };
 
           setCurrentResult(newResult);
-          setDisplayedSentences((prev) => [...prev, selectedSentence.sentence]);
+          setDisplayedSentences((prev) => [...prev, selectedSentence.sentence.trim()]);
+
+          // 타이핑 초기화
+          setTyped("");
+          setStartedAt(null);
+          setEndedAt(null);
+          focusInput();
         } else {
-          setShowAllDonePopup(true); // Show custom popup instead of alert
+          setShowAllDonePopup(true);
         }
       } else {
         alert("해당 감정에 대한 문장을 찾을 수 없습니다.");
@@ -284,7 +290,13 @@ function Page2() {
           기분 다시 입력하기
         </button>
 
-        <button className="button-shadcn-outline" onClick={() => setShowCompletePopup(true)}>
+        <button
+          className="button-shadcn-outline"
+          onClick={() => {
+            setShowCompletePopup(false);
+            fetchNewSentence(currentResult.emotion, currentResult.situation);
+          }}
+        >
           팝업 테스트
         </button>
 
