@@ -1,5 +1,6 @@
 import json
-from flask import Flask, Response, request, jsonify, send_from_directory
+from flask import Flask, Response, request, jsonify, send_from_directory, Blueprint
+from flask_restx import Resource, Api, fields
 from openai import OpenAI
 from flask_cors import CORS
 import os
@@ -13,8 +14,21 @@ load_dotenv()
 # ✅ React 빌드 경로 지정 (Vite나 CRA에 따라 dist/build 차이 있음)
 REACT_BUILD_DIR = os.path.join(os.path.dirname(__file__), "../frontend/dist")
 
-app = Flask(__name__, static_folder=REACT_BUILD_DIR, static_url_path="/")
+# static_folder를 frontend/dist로 설정하고, static_url_path를 ''로 설정
+app = Flask(__name__, static_folder=REACT_BUILD_DIR, static_url_path='')
 CORS(app)
+
+# API 블루프린트 생성
+blueprint = Blueprint('api', __name__, url_prefix='/api')
+api = Api(blueprint, version='1.0', title='다정 API',
+          description='감정 분석 및 문장 추천 API',
+          doc='/docs/')
+app.register_blueprint(blueprint)
+
+# API 네임스페이스 생성
+# url_prefix='/api'이므로, 네임스페이스 경로는 '/api'로 시작하게 됨
+ns = api.namespace('', description='감정 분석 및 문장 추천 API')
+
 
 # OpenAI 클라이언트 (환경변수에서 키 가져오기 권장)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -134,124 +148,6 @@ def map_to_category(term, category_embeddings, canonical_keyword_dict):
 
 # --- 임베딩 기반 분류를 위한 코드 종료 ---
 
-
-# React 라우팅 처리 (SPA 지원)
-@app.route("/", defaults={"path": ""})
-@app.route("/<path:path>")
-def serve_react(path):
-    if path != "" and os.path.exists(os.path.join(REACT_BUILD_DIR, path)):
-        return send_from_directory(REACT_BUILD_DIR, path)
-    else:
-        return send_from_directory(REACT_BUILD_DIR, "index.html")
-
-# 감정 분석 API (격려문은 DB에서 가져옴)
-@app.route("/api/mood", methods=["POST"])
-def analyze_mood():
-    data = request.get_json()
-    user_text = data.get("text", "").strip()
-    if not user_text:
-        return jsonify({"error": "문장을 입력해주세요"}), 400
-
-    # 1. ChatGPT를 사용하여 감정 및 상황 분석 (임베딩 기반)
-    system_prompt = "문장을 가장 관련성 높은 '감정'과 '상황'으로 분류. JSON 출력 에시 {\"emotion\": \"기쁨\", \"situation\": \"가족\"}"
-    user_prompt = f'문장: {user_text}'
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            max_tokens=50,
-            temperature=0.1,
-        )
-        response_text = response.choices[0].message.content.strip()
-        chatgpt_result = json.loads(response_text.replace("'", '"'))
-
-        unmapped_emotion = chatgpt_result.get("emotion", "알 수 없음")
-        unmapped_situation = chatgpt_result.get("situation", "알 수 없음")
-        
-        print(f"chatGPT 1차 분석: 감정 ('{unmapped_emotion}'), 상황 ('{unmapped_situation}')")
-
-        # 임베딩을 사용하여 결과값을 표준 카테고리로 매핑
-        detected_emotion = map_to_category(unmapped_emotion, EMOTION_EMBEDDINGS, EMOTION_KEYWORDS)
-        detected_situation = map_to_category(unmapped_situation, SITUATION_EMBEDDINGS, SITUATION_KEYWORDS)
-        
-        print(f"User text: '{user_text}' -> Mapped Emotion: '{detected_emotion}', Mapped Situation: '{detected_situation}'")
-
-    except Exception as e:
-        print(f"ChatGPT 분석 또는 매핑 오류: {e}")
-        detected_emotion = "알 수 없음"
-        detected_situation = "알 수 없음"
-
-    # 2. DB에서 해당 감정과 상황의 필사 문장 가져오기
-    encouragement_data = {"sentence": "", "author": "", "title": ""}
-    if detected_emotion != "알 수 없음":
-        conn = None
-        cur = None
-        try:
-            conn = get_db_connection()
-            if conn:
-                cur = conn.cursor()
-
-                # 감정 문자열을 분리하여 각 감정에 대한 OR 조건 생성
-                emotions = [e.strip() for e in detected_emotion.replace(",", " ").split() if e.strip()]
-                
-                # 기본 쿼리
-                query = "SELECT sentence, author, title FROM contents WHERE "
-                params = []
-
-                # 감정 조건 추가 (OR)
-                emotion_conditions = " OR ".join(["emotion LIKE %s"] * len(emotions))
-                query += f"({emotion_conditions})"
-                params.extend([f'%{emotion}%' for emotion in emotions])
-
-                # 상황 조건 추가 (AND)
-                if detected_situation != "알 수 없음":
-                    query += " AND situation LIKE %s"
-                    params.append(f'%{detected_situation}%')
-
-                cur.execute(query, tuple(params))
-                contents = cur.fetchall()
-
-                # 만약 감정과 상황 모두에 일치하는 내용이 없으면 감정만으로 재검색
-                if not contents and detected_situation != "알 수 없음":
-                    query = "SELECT sentence, author, title FROM contents WHERE " + f"({emotion_conditions})"
-                    cur.execute(query, tuple([f'%{emotion}%' for emotion in emotions]))
-                    contents = cur.fetchall()
-
-                if contents:
-                    selected_content = random.choice(contents)
-                    encouragement_data = {
-                        "sentence": selected_content[0],
-                        "author": selected_content[1],
-                        "title": selected_content[2]
-                    }
-                else:
-                    print(f"No content found for emotion: {detected_emotion}, situation: {detected_situation}")
-
-            else:
-                print("Database connection failed for mood analysis.")
-        except Exception as e:
-            print(f"Error fetching content from DB: {e}")
-        finally:
-            if cur:
-                cur.close()
-            if conn:
-                conn.close()
-
-    # 최종 결과 반환
-    return jsonify({
-        "emotion": detected_emotion,
-        "situation": detected_situation,
-        "encouragement": encouragement_data["sentence"],
-        "source": f"{encouragement_data['title']}, {encouragement_data['author']}" if encouragement_data["title"] else ""
-    })
-
-
-
-
 # 데이터베이스 연결 함수
 def get_db_connection():
     try:
@@ -269,68 +165,194 @@ def get_db_connection():
         traceback.print_exc()
         return None
 
-# 감정에 따른 필사 문장 조회 API
-@app.route("/api/contents_by_emotion/<emotion>", methods=["GET"])
-def get_contents_by_emotion(emotion):
-    situation = request.args.get("situation")
-    print(f"--- 새로운 문장 요청: 감정='{emotion}', 상황='{situation}' ---")
+mood_input_model = ns.model('MoodInput', {
+    'text': fields.String(required=True, description='분석할 문장', example='피곤한 하루였어요.')
+})
 
-    conn = None
-    cur = None
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({"error": "데이터베이스 연결 실패"}), 500
+@ns.route("/mood")
+class AnalyzeMood(Resource):
+    @ns.expect(mood_input_model)
+    @ns.doc(description="사용자 문장을 기반으로 감정과 상황을 분석하고, 위로의 문장을 추천합니다.")
+    def post(self):
+        """감정 및 상황 분석 API"""
+        data = request.get_json()
+        user_text = data.get("text", "").strip()
+        if not user_text:
+            return jsonify({"error": "문장을 입력해주세요"}), 400
 
-        cur = conn.cursor()
-        
-        # 감정 문자열을 분리하여 각 감정에 대한 OR 조건 생성
-        emotions = [e.strip() for e in emotion.replace(",", " ").split() if e.strip()]
-        
-        if not emotions:
-            return jsonify({"error": "감정을 입력해주세요"}), 400
+        # 1. ChatGPT를 사용하여 감정 및 상황 분석 (임베딩 기반)
+        system_prompt = "문장을 가장 관련성 높은 '감정'과 '상황'으로 분류. JSON 출력 에시 {\"emotion\": \"기쁨\", \"situation\": \"가족\"}"
+        user_prompt = f'문장: {user_text}'
 
-        query = "SELECT sentence, author, title FROM contents WHERE "
-        params = []
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                max_tokens=50,
+                temperature=0.1,
+            )
+            response_text = response.choices[0].message.content.strip()
+            chatgpt_result = json.loads(response_text.replace("'", '"'))
 
-        # 감정 조건 추가 (OR)
-        emotion_conditions = " OR ".join(["emotion LIKE %s"] * len(emotions))
-        query += f"({emotion_conditions})"
-        params.extend([f'%{em}%' for em in emotions])
+            unmapped_emotion = chatgpt_result.get("emotion", "알 수 없음")
+            unmapped_situation = chatgpt_result.get("situation", "알 수 없음")
+            
+            print(f"chatGPT 1차 분석: 감정 ('{unmapped_emotion}'), 상황 ('{unmapped_situation}')")
 
-        # 상황 조건 추가 (AND)
-        if situation and situation != "알 수 없음":
-            query += " AND situation LIKE %s"
-            params.append(f'%{situation}%')
+            # 임베딩을 사용하여 결과값을 표준 카테고리로 매핑
+            detected_emotion = map_to_category(unmapped_emotion, EMOTION_EMBEDDINGS, EMOTION_KEYWORDS)
+            detected_situation = map_to_category(unmapped_situation, SITUATION_EMBEDDINGS, SITUATION_KEYWORDS)
+            
+            print(f"User text: '{user_text}' -> Mapped Emotion: '{detected_emotion}', Mapped Situation: '{detected_situation}'")
 
-        cur.execute(query, tuple(params))
-        contents = cur.fetchall()
+        except Exception as e:
+            print(f"ChatGPT 분석 또는 매핑 오류: {e}")
+            detected_emotion = "알 수 없음"
+            detected_situation = "알 수 없음"
 
-        # 만약 감정과 상황 모두에 일치하는 내용이 없으면 감정만으로 재검색
-        if not contents and situation and situation != "알 수 없음":
-            query = "SELECT sentence, author, title FROM contents WHERE " + f"({emotion_conditions})"
-            cur.execute(query, tuple([f'%{em}%' for em in emotions]))
+        # 2. DB에서 해당 감정과 상황의 필사 문장 가져오기
+        encouragement_data = {"sentence": "", "author": "", "title": ""}
+        if detected_emotion != "알 수 없음":
+            conn = None
+            cur = None
+            try:
+                conn = get_db_connection()
+                if conn:
+                    cur = conn.cursor()
+
+                    # 감정 문자열을 분리하여 각 감정에 대한 OR 조건 생성
+                    emotions = [e.strip() for e in detected_emotion.replace(",", " ").split() if e.strip()]
+                    
+                    # 기본 쿼리
+                    query = "SELECT sentence, author, title FROM contents WHERE "
+                    params = []
+
+                    # 감정 조건 추가 (OR)
+                    emotion_conditions = " OR ".join(["emotion LIKE %s"] * len(emotions))
+                    query += f"({emotion_conditions})"
+                    params.extend([f'%{emotion}%' for emotion in emotions])
+
+                    # 상황 조건 추가 (AND)
+                    if detected_situation != "알 수 없음":
+                        query += " AND situation LIKE %s"
+                        params.append(f'%{detected_situation}%')
+
+                    cur.execute(query, tuple(params))
+                    contents = cur.fetchall()
+
+                    # 만약 감정과 상황 모두에 일치하는 내용이 없으면 감정만으로 재검색
+                    if not contents and detected_situation != "알 수 없음":
+                        query = "SELECT sentence, author, title FROM contents WHERE " + f"({emotion_conditions})"
+                        cur.execute(query, tuple([f'%{emotion}%' for emotion in emotions]))
+                        contents = cur.fetchall()
+
+                    if contents:
+                        selected_content = random.choice(contents)
+                        encouragement_data = {
+                            "sentence": selected_content[0],
+                            "author": selected_content[1],
+                            "title": selected_content[2]
+                        }
+                    else:
+                        print(f"No content found for emotion: {detected_emotion}, situation: {detected_situation}")
+
+                else:
+                    print("Database connection failed for mood analysis.")
+            except Exception as e:
+                print(f"Error fetching content from DB: {e}")
+            finally:
+                if cur:
+                    cur.close()
+                if conn:
+                    conn.close()
+
+        # 최종 결과 반환
+        return jsonify({
+            "emotion": detected_emotion,
+            "situation": detected_situation,
+            "encouragement": encouragement_data["sentence"],
+            "source": f"{encouragement_data['title']}, {encouragement_data['author']}" if encouragement_data["title"] else ""
+        })
+
+
+@ns.route("/contents_by_emotion/<string:emotion>")
+@ns.param('emotion', '쉼표로 구분된 감정 키워드 (예: 기쁨,행복)')
+class ContentsByEmotion(Resource):
+    @ns.doc(description="특정 감정 및 상황에 맞는 문장 목록을 조회합니다.",
+             params={'situation': '상황 키워드 (선택 사항, 예: 친구)'})
+    def get(self, emotion):
+        """감정에 따른 필사 문장 조회 API"""
+        situation = request.args.get("situation")
+        print(f"--- 새로운 문장 요청: 감정='{emotion}', 상황='{situation}' ---")
+
+        conn = None
+        cur = None
+        try:
+            conn = get_db_connection()
+            if conn is None:
+                return jsonify({"error": "데이터베이스 연결 실패"}), 500
+
+            cur = conn.cursor()
+            
+            # 감정 문자열을 분리하여 각 감정에 대한 OR 조건 생성
+            emotions = [e.strip() for e in emotion.replace(",", " ").split() if e.strip()]
+            
+            if not emotions:
+                return jsonify({"error": "감정을 입력해주세요"}), 400
+
+            query = "SELECT sentence, author, title FROM contents WHERE "
+            params = []
+
+            # 감정 조건 추가 (OR)
+            emotion_conditions = " OR ".join(["emotion LIKE %s"] * len(emotions))
+            query += f"({emotion_conditions})"
+            params.extend([f'%{em}%' for em in emotions])
+
+            # 상황 조건 추가 (AND)
+            if situation and situation != "알 수 없음":
+                query += " AND situation LIKE %s"
+                params.append(f'%{situation}%')
+
+            cur.execute(query, tuple(params))
             contents = cur.fetchall()
-        
-        # 결과를 JSON 형식으로 변환
-        result = []
-        for sentence, author, title in contents:
-            result.append({
-                "sentence": sentence,
-                "author": author,
-                "title": title
-            })
-        
-        return jsonify(result)
 
-    except Exception as e:
-        print(f"Error fetching contents by emotion: {e}")
-        return jsonify({"error": "데이터 조회 중 오류 발생"}), 500
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+            # 만약 감정과 상황 모두에 일치하는 내용이 없으면 감정만으로 재검색
+            if not contents and situation and situation != "알 수 없음":
+                query = "SELECT sentence, author, title FROM contents WHERE " + f"({emotion_conditions})"
+                cur.execute(query, tuple([f'%{em}%' for em in emotions]))
+                contents = cur.fetchall()
+            
+            # 결과를 JSON 형식으로 변환
+            result = []
+            for sentence, author, title in contents:
+                result.append({
+                    "sentence": sentence,
+                    "author": author,
+                    "title": title
+                })
+            
+            return jsonify(result)
+
+        except Exception as e:
+            print(f"Error fetching contents by emotion: {e}")
+            return jsonify({"error": "데이터 조회 중 오류 발생"}), 500
+        finally:
+            if cur:
+                cur.close()
+            if conn:
+                conn.close()
+
+# React 라우팅 처리 (SPA 지원)
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
