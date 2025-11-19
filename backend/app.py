@@ -8,6 +8,7 @@ import psycopg2
 import random
 from dotenv import load_dotenv
 import traceback
+import math
 
 load_dotenv()
 
@@ -20,9 +21,9 @@ CORS(app)
 
 # API 블루프린트 생성
 blueprint = Blueprint('api', __name__, url_prefix='/api')
-api = Api(blueprint, version='1.0', title='다정 API',
+api = Api(blueprint, version='1.0', title='다정문장 API',
           description='감정 분석 및 문장 추천 API',
-          doc='/docs/')
+          doc='/docs/', ordered=True)
 app.register_blueprint(blueprint)
 
 # API 네임스페이스 생성
@@ -32,8 +33,6 @@ ns = api.namespace('', description='감정 분석 및 문장 추천 API')
 
 # OpenAI 클라이언트 (환경변수에서 키 가져오기 권장)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-
-import math
 
 # --- 임베딩 기반 분류를 위한 코드 시작 ---
 
@@ -172,7 +171,7 @@ mood_input_model = ns.model('MoodInput', {
 @ns.route("/mood")
 class AnalyzeMood(Resource):
     @ns.expect(mood_input_model)
-    @ns.doc(description="사용자 문장을 기반으로 감정과 상황을 분석하고, 위로의 문장을 추천합니다.")
+    @ns.doc(description="사용자가 입력한 문장을 분석하여 감정과 상황을 식별하고, 위로의 문장을 추천합니다.")
     def post(self):
         """감정 및 상황 분석 API"""
         data = request.get_json()
@@ -281,10 +280,10 @@ class AnalyzeMood(Resource):
 @ns.route("/contents_by_emotion/<string:emotion>")
 @ns.param('emotion', '쉼표로 구분된 감정 키워드 (예: 기쁨,행복)')
 class ContentsByEmotion(Resource):
-    @ns.doc(description="특정 감정 및 상황에 맞는 문장 목록을 조회합니다.",
+    @ns.doc(description="감정 및 상황에 따른 새로운 문장을 추천합니다.",
              params={'situation': '상황 키워드 (선택 사항, 예: 친구)'})
     def get(self, emotion):
-        """감정에 따른 필사 문장 조회 API"""
+        """새로운 필사 문장 조회 API"""
         situation = request.args.get("situation")
         print(f"--- 새로운 문장 요청: 감정='{emotion}', 상황='{situation}' ---")
 
