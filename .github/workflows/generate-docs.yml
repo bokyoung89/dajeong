@@ -26,6 +26,8 @@ jobs:
 
       - name: Generate OpenAPI Spec
         run: python generate_spec.py
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Move spec to docs repo
         run: mv openapi.json dajeong-docs/
