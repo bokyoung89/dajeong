@@ -26,7 +26,7 @@ jobs:
       - name: Clone Docs repository
         uses: actions/checkout@v4
         with:
-          repositoy: bokyoung89/dajeong-docs
+          repository: bokyoung89/dajeong-docs
           path: dajeong-docs
           ssh-key: ${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}
 
