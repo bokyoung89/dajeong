@@ -21,7 +21,7 @@ CORS(app)
 
 # API 블루프린트 생성
 blueprint = Blueprint('api', __name__, url_prefix='/api')
-api = Api(blueprint, version='1.0', title='다정문장 API',
+api = Api(blueprint, version='1.0', title='Dajeong API',
           description='감정 분석 및 문장 추천 API',
           doc='/docs/', ordered=True)
 app.register_blueprint(blueprint)
@@ -86,16 +86,21 @@ SITUATION_KEYWORDS = {
 }
 
 # 최적화를 위해 서버 시작 시 표준 카테고리의 임베딩 미리 계산
-print("표준 카테고리에 대한 임베딩을 미리 계산합니다...")
-try:
-    EMOTION_EMBEDDINGS = {name: get_embedding(keywords) for name, keywords in EMOTION_KEYWORDS.items()}
-    SITUATION_EMBEDDINGS = {name: get_embedding(keywords) for name, keywords in SITUATION_KEYWORDS.items()}
-    print("임베딩 계산이 완료되었습니다.")
-except Exception as e:
-    print(f"시작 시 임베딩을 계산할 수 없습니다: {e}")
-    # 시작 시 API 사용이 불가능한 경우를 대비
-    EMOTION_EMBEDDINGS = {}
-    SITUATION_EMBEDDINGS = {}
+EMOTION_EMBEDDINGS = {}
+SITUATION_EMBEDDINGS = {}
+
+def initialize_embeddings():
+    """서버 시작 시 표준 카테고리의 임베딩을 미리 계산합니다."""
+    print("표준 카테고리에 대한 임베딩을 미리 계산합니다...")
+    try:
+        global EMOTION_EMBEDDINGS, SITUATION_EMBEDDINGS
+        EMOTION_EMBEDDINGS = {name: get_embedding(keywords) for name, keywords in EMOTION_KEYWORDS.items()}
+        SITUATION_EMBEDDINGS = {name: get_embedding(keywords) for name, keywords in SITUATION_KEYWORDS.items()}
+        print("임베딩 계산이 완료되었습니다.")
+    except Exception as e:
+        print(f"시작 시 임베딩을 계산할 수 없습니다: {e}")
+        # API 키가 없거나 다른 문제 발생 시, 서버는 시작되지만 매핑 기능은 실시간으로 처리됨
+        pass
 
 # LLM의 응답을 표준 카테고리로 매핑하는 함수
 def map_to_category(term, category_embeddings, canonical_keyword_dict):
@@ -354,4 +359,5 @@ def serve(path):
         return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == "__main__":
+    initialize_embeddings()
     app.run(host="0.0.0.0", port=5000, debug=True)
