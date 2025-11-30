@@ -31,6 +31,14 @@ jobs:
       - name: Move spec to docs repo
         run: mv openapi.json dajeong-docs/
 
+      - name: Debug Secret
+        run: |
+          if [[ -z "${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}" ]]; then
+            echo "::error::Secret is EMPTY or not found."
+          else
+            echo "Secret is present"
+          fi
+
       - name: Commit and Push to Docs Repo
         uses: peaceiris/actions-gh-pages@v3
         with:
