@@ -22,19 +22,26 @@ jobs:
         run: python generate_spec.py
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      
-      - name: Clean up cache files
-        run: find . -type d -name "__pycache__" -exec rm -r {} +
 
-      - name: Push openapi.json to docs repository
-        uses: cpina/github-action-push-to-another-repository@main
-        env:
-          SSH_DEPLOY_KEY: ${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}
+      - name: Clone Docs repository
+        uses: actions/checkout@v4
         with:
-          source-directory: '.'
-          destination-github-username: 'bokyoung89'
-          destination-repository-name: 'dajeong-docs'
-          target-branch: main
-          arget-directory: '.' 
-          commit-message: 'feat(api): Auto-update API specification'
-          file-pattern: 'openapi.json'
+          repositoy: bokyoung89/dajeong-docs
+          path: dajeong-docs
+          ssh-key: ${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}
+
+      - name: Move spec to docs repo
+        run: mv openapi.json dajeong-docs/
+      
+      - name: Commit and push changes
+        run: | 
+          cd dajeong-docs
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          if [[ -n $(git status -s) ]]; then
+            git add openapi.json
+            git commit -m "feat: Auto-update API specification"
+            git push
+          else
+            echo "No changes to API spec."
+          fi
