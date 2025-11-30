@@ -10,13 +10,6 @@ jobs:
       - name: Checkout API repository
         uses: actions/checkout@v4
 
-      - name: Checkout Docs repository
-        uses: actions/checkout@v4
-        with:
-          repository: bokyoung89/dajeong-docs # 문서 저장소 경로
-          path: dajeong-docs
-          ssh-key: ${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -29,19 +22,22 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
+      - name: Clone Docs repository
+        uses: actions/checkout@v4
+        with:
+          repositoy: bokyoung89/dajeong-docs
+          path: dajeong-docs
+      
       - name: Move spec to docs repo
         run: mv openapi.json dajeong-docs/
 
-      - name: Commit and push changes
-        run: |
-          cd dajeong-docs
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git remote set-url origin git@github.com:${{ github.repository_owner }}/dajeong-docs.git
-          if [[ -n $(git status -s) ]]; then
-            git add openapi.json
-            git commit -m "feat: Auto-update API specification"
-            git push
-          else
-            echo "No changes to API spec."
-          fi
+      - name: Commit and Push to Docs Repo
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          ssh_private_key: ${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}
+          external_repository: bokyoung89/dajeong-docs
+          publish_dir: ./dajeong-docs
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'feat: Auto-update API specification'
+          publish_branch: main
