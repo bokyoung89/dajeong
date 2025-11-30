@@ -23,6 +23,9 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       
+      - name: Clean up cache files
+        run: find . -type d -name "__pycache__" -exec rm -r {} +
+
       - name: Push openapi.json to docs repository
         uses: cpina/github-action-push-to-another-repository@main
         env:

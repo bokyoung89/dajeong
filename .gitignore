@@ -1,3 +1,14 @@
 /250805.py
 /250805_1.py
+# Environments
 .env
+.venv
+env/
+venv/
+ENV/
+env.bak
+venv.bak
+
+# Python cache
+**/__pycache__/
+*.pyc
