@@ -25,7 +25,7 @@ jobs:
       - name: Clone Docs repository
         uses: actions/checkout@v4
         with:
-          repositoy: bokyoung89/dajeong-docs
+          repository: bokyoung89/dajeong-docs
           path: dajeong-docs
       
       - name: Move spec to docs repo
@@ -34,7 +34,7 @@ jobs:
       - name: Commit and Push to Docs Repo
         uses: peaceiris/actions-gh-pages@v3
         with:
-          ssh_private_key: ${{ secrets.DOCS_REPO_PRIVATE_KEY }}
+          ssh_private_key: ${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}
           external_repository: bokyoung89/dajeong-docs
           publish_dir: ./dajeong-docs
           user_name: 'github-actions[bot]'
