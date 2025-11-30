@@ -176,7 +176,7 @@ mood_input_model = ns.model('MoodInput', {
 @ns.route("/mood")
 class AnalyzeMood(Resource):
     @ns.expect(mood_input_model)
-    @ns.doc(description="(GitAction 테스트) 사용자가 입력한 문장을 분석하여 감정과 상황을 식별하고, 위로의 문장을 추천합니다.")
+    @ns.doc(description="사용자가 입력한 문장을 분석하여 감정과 상황을 식별하고, 위로의 문장을 추천합니다.")
     def post(self):
         """감정 및 상황 분석 API"""
         data = request.get_json()
