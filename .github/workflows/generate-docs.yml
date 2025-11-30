@@ -34,7 +34,7 @@ jobs:
       - name: Commit and Push to Docs Repo
         uses: peaceiris/actions-gh-pages@v3
         with:
-          ssh_private_key: ${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}
+          deploy-key: ${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}
           external_repository: bokyoung89/dajeong-docs
           publish_dir: ./dajeong-docs
           user_name: 'github-actions[bot]'
