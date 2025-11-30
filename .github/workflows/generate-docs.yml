@@ -22,14 +22,6 @@ jobs:
         run: python generate_spec.py
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-
-      - name: Clone Docs repository
-        uses: actions/checkout@v4
-        with:
-          repository: bokyoung89/dajeong-docs
-          path: dajeong-docs
-          ssh-key: ${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}
-          ssh-strict: false
       
       - name: Push openapi.json to docs repository
         uses: cpina/github-action-push-to-another-repository@main
