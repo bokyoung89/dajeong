@@ -15,7 +15,7 @@ jobs:
         with:
           repository: bokyoung89/dajeong-docs # 문서 저장소 경로
           path: dajeong-docs
-          ssh-key: ${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}
+          ssh-key: ${{ secrets.DOCS_REPO_PRIVATE_KEY }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
