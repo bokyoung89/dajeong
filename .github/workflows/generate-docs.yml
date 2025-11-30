@@ -1,0 +1,44 @@
+name: Generate and Push API Docs
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout API repository
+        uses: actions/checkout@v4
+
+      - name: Checkout Docs repository
+        uses: actions/checkout@v4
+        with:
+          repository: bokyoung89/dajeong-docs # 문서 저장소 경로
+          path: dajeong-docs
+          ssh-key: ${{ secrets.DOCS_REPO_PRIVATE_KEY }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install -r requirements.txt # requirements.txt에 필요한 패키지 명시
+
+      - name: Generate OpenAPI Spec
+        run: python generate_spec.py
+
+      - name: Move spec to docs repo
+        run: mv openapi.json dajeong-docs/
+
+      - name: Commit and push changes
+        run: |
+          cd dajeong-docs
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          if [[ -n $(git status -s) ]]; then
+            git add openapi.json
+            git commit -m "feat: Auto-update API specification"
+            git push
+          else
+            echo "No changes to API spec."
+          fi
