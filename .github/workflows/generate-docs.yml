@@ -27,6 +27,8 @@ jobs:
         with:
           repository: bokyoung89/dajeong-docs
           path: dajeong-docs
+          ssh-key: ${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}
+          ssh-strict: false
       
       - name: Move spec to docs repo
         run: mv openapi.json dajeong-docs/
