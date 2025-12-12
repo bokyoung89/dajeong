@@ -31,7 +31,7 @@ jobs:
           ssh-key: ${{ secrets.DAJEONG_DOCS_REPO_PRIVATE_KEY }}
 
       - name: Move spec to docs repo
-        run: mv openapi.json dajeong-docs/
+        run: mv swagger.yaml dajeong-docs/
       
       - name: Commit and push changes
         run: | 
@@ -39,7 +39,7 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           if [[ -n $(git status -s) ]]; then
-            git add openapi.json
+            git add swagger.yaml
             git commit -m "feat: Auto-update API specification"
             git push
           else

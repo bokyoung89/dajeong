@@ -1,8 +1,8 @@
-import json
+import yaml
 from backend.app import app, api
 
 def generate_spec():
-    """Generates the OpenAPI spec, setting SERVER_NAME for context."""
+    """Generates the OpenAPI spec as a YAML file."""
     # Configure SERVER_NAME for url_for to work correctly outside of a request
     app.config['SERVER_NAME'] = 'localhost:5000'
     
@@ -10,10 +10,10 @@ def generate_spec():
         # The schema can now be accessed successfully within the context
         spec = api.__schema__
     
-    with open('openapi.json', 'w', encoding='utf-8') as f:
-        json.dump(spec, f, ensure_ascii=False, indent=2)
+    with open('swagger.yaml', 'w', encoding='utf-8') as f:
+        yaml.dump(spec, f, allow_unicode=True, sort_keys=False, indent=2)
     
-    print("Successfully generated openapi.json")
+    print("Successfully generated swagger.yaml")
 
 if __name__ == '__main__':
     generate_spec()
