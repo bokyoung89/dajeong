@@ -29,7 +29,14 @@ app.register_blueprint(blueprint)
 # API 네임스페이스 생성
 # url_prefix='/api'이므로, 네임스페이스 경로는 '/api'로 시작하게 됨
 ns = api.namespace('', description='감정 분석 및 문장 추천 API')
-
+content_model = ns.model('Content', {
+    'sentence': fields.String(description="추천 문장 내용", example="어제는 끝났고, 내일은 멀었고, 오늘은 아직 모른다."),
+    'author': fields.String(description="작가", example="유미지"),
+    'title': fields.String(description="출처", example="미지의 서울")
+})
+contents_response = ns.model('ContentsResponse', {
+    'items': fields.List(fields.Nested(content_model))
+})
 
 # OpenAI 클라이언트 (환경변수에서 키 가져오기 권장)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -177,6 +184,7 @@ mood_input_model = ns.model('MoodInput', {
 class AnalyzeMood(Resource):
     @ns.expect(mood_input_model)
     @ns.doc(description="사용자가 입력한 문장을 분석하여 감정과 상황을 식별하고, 위로의 문장을 추천합니다.")
+    @ns.marshal_list_with(content_model, code=200, description="성공적으로 문장을 조회했습니다.")
     def post(self):
         """감정 및 상황 분석 API"""
         data = request.get_json()
@@ -285,8 +293,9 @@ class AnalyzeMood(Resource):
 @ns.route("/contents_by_emotion/<string:emotion>")
 @ns.param('emotion', '쉼표로 구분된 감정 키워드 (예: 기쁨,행복)')
 class ContentsByEmotion(Resource):
-    @ns.doc(description="감정 및 상황에 따른 새로운 문장을 추천합니다.",
+    @ns.doc(description="사용자의 감정과 상황을 기반으로 위로 문장을 추천합니다.",
              params={'situation': '상황 키워드 (선택 사항, 예: 친구)'})
+    @ns.marshal_list_with(content_model, code=200, description="성공적으로 문장을 조회했습니다.")
     def get(self, emotion):
         """새로운 필사 문장 조회 API"""
         situation = request.args.get("situation")
