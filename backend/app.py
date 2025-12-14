@@ -180,17 +180,24 @@ mood_input_model = ns.model('MoodInput', {
     'text': fields.String(required=True, description='분석할 문장', example='피곤한 하루였어요.')
 })
 
+mood_response_model = ns.model('MoodResponse', {
+    'emotion': fields.String(description='분석된 감정'),
+    'situation': fields.String(description='분석된 상황'),
+    'encouragement': fields.String(description='추천 문장'),
+    'source': fields.String(description='추천 문장 출처')
+})
+
 @ns.route("/mood")
 class AnalyzeMood(Resource):
     @ns.expect(mood_input_model)
     @ns.doc(description="사용자가 입력한 문장을 분석하여 감정과 상황을 식별하고, 위로의 문장을 추천합니다.")
-    @ns.marshal_list_with(content_model, code=200, description="성공적으로 문장을 조회했습니다.")
+    @ns.marshal_with(mood_response_model, code=200, description="성공적으로 분석 및 추천을 완료했습니다.")
     def post(self):
         """감정 및 상황 분석 API"""
         data = request.get_json()
         user_text = data.get("text", "").strip()
         if not user_text:
-            return jsonify({"error": "문장을 입력해주세요"}), 400
+            return {"error": "문장을 입력해주세요"}, 400
 
         # 1. ChatGPT를 사용하여 감정 및 상황 분석 (임베딩 기반)
         system_prompt = "문장을 가장 관련성 높은 '감정'과 '상황'으로 분류. JSON 출력 에시 {\"emotion\": \"기쁨\", \"situation\": \"가족\"}"
@@ -282,12 +289,12 @@ class AnalyzeMood(Resource):
                     conn.close()
 
         # 최종 결과 반환
-        return jsonify({
+        return {
             "emotion": detected_emotion,
             "situation": detected_situation,
             "encouragement": encouragement_data["sentence"],
             "source": f"{encouragement_data['title']}, {encouragement_data['author']}" if encouragement_data["title"] else ""
-        })
+        }
 
 
 @ns.route("/contents_by_emotion/<string:emotion>")
@@ -347,7 +354,7 @@ class ContentsByEmotion(Resource):
                     "title": title
                 })
             
-            return jsonify(result)
+            return result
 
         except Exception as e:
             print(f"Error fetching contents by emotion: {e}")
