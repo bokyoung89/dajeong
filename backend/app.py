@@ -190,10 +190,10 @@ mood_response_model = ns.model('MoodResponse', {
 @ns.route("/mood")
 class AnalyzeMood(Resource):
     @ns.expect(mood_input_model)
-    @ns.doc(description="사용자가 입력한 문장을 분석하여 감정과 상황을 식별하고, 위로의 문장을 추천합니다.")
+    @ns.doc(description="사용자가 입력한 문장을 분석하여 감정과 상황을 식별하고, 이를 바탕으로 위로 문장을 추천합니다.")
     @ns.marshal_with(mood_response_model, code=200, description="성공적으로 분석 및 추천을 완료했습니다.")
     def post(self):
-        """감정 및 상황 분석 API"""
+        """사용자 입력 문장 분석 기반 위로 문장 추천 API"""
         data = request.get_json()
         user_text = data.get("text", "").strip()
         if not user_text:
@@ -300,11 +300,11 @@ class AnalyzeMood(Resource):
 @ns.route("/contents_by_emotion/<string:emotion>")
 @ns.param('emotion', '쉼표로 구분된 감정 키워드 (예: 기쁨,행복)')
 class ContentsByEmotion(Resource):
-    @ns.doc(description="사용자의 감정과 상황을 기반으로 위로 문장을 추천합니다.",
+    @ns.doc(description="감정 정보를 입력받아 해당 감정을 위로하는 문장을 추천합니다.",
              params={'situation': '상황 키워드 (선택 사항, 예: 친구)'})
     @ns.marshal_list_with(content_model, code=200, description="성공적으로 문장을 조회했습니다.")
     def get(self, emotion):
-        """새로운 필사 문장 조회 API"""
+        """사용자 감정 기반 문장 조회 API"""
         situation = request.args.get("situation")
         print(f"--- 새로운 문장 요청: 감정='{emotion}', 상황='{situation}' ---")
 
