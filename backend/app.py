@@ -193,7 +193,7 @@ class AnalyzeMood(Resource):
     @ns.doc(description="사용자가 입력한 문장을 분석하여 감정과 상황을 식별하고, 이를 바탕으로 위로 문장을 추천합니다.")
     @ns.marshal_with(mood_response_model, code=200, description="성공적으로 분석 및 추천을 완료했습니다.")
     def post(self):
-        """사용자 입력 문장 분석 기반 위로 문장 추천 API"""
+        """입력 문장 기반 필사 문구 조회"""
         data = request.get_json()
         user_text = data.get("text", "").strip()
         if not user_text:
@@ -304,7 +304,7 @@ class ContentsByEmotion(Resource):
              params={'situation': '상황 키워드 (선택 사항, 예: 친구)'})
     @ns.marshal_list_with(content_model, code=200, description="성공적으로 문장을 조회했습니다.")
     def get(self, emotion):
-        """사용자 감정 기반 문장 조회 API"""
+        """감정 기반 필사 문구 조회"""
         situation = request.args.get("situation")
         print(f"--- 새로운 문장 요청: 감정='{emotion}', 상황='{situation}' ---")
 
