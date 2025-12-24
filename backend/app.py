@@ -9,8 +9,10 @@ import random
 from dotenv import load_dotenv
 import traceback
 import math
+import logging
 
 load_dotenv()
+logging.basicConfig(level=logging.INFO)
 
 # ✅ React 빌드 경로 지정 (Vite나 CRA에 따라 dist/build 차이 있음)
 REACT_BUILD_DIR = os.path.join(os.path.dirname(__file__), "../frontend/dist")
@@ -67,19 +69,20 @@ EMOTION_KEYWORDS = {
     "우울": "우울, 침울함, 공허함",
     "짜증": "짜증, 불만",
     "무기력": "무기력, 지침, 피곤함, 번아웃",
-    "불안": "불안, 걱정, 초조함, 긴장",
+    "불안": "불안, 걱정, 초조함, 긴장, 조급함",
     "두려움": "두려움, 공포, 무서움, 겁",
     "외로움": "외로움, 고독, 쓸쓸함, 혼자",
-    "분노": "분노, 화남, 역정"
+    "분노": "분노, 화남, 역정",
+    "실망": "실망"
 }
 
 SITUATION_KEYWORDS = {
     "외로움": "외로움, 고독, 혼자 있는 시간",
     "친구": "친구, 우정, 친구관계",
     "가족": "가족, 부모님, 형제, 자매, 아이, 조카, 배우자",
-    "실수": "실수, 잘못, 후회",
+    "실수": "실수, 잘못, 후회, 시간 부족",
     "시험": "시험, 공부, 성적, 합격, 불합격",
-    "직장": "직장, 회사, 업무, 동료, 상사",
+    "직장": "직장, 회사, 업무, 동료, 상사, 일",
     "취업": "취업, 구직, 면접, 이직",
     "건강": "건강, 질병, 병원, 아픔, 운동",
     "사랑": "사랑, 연인, 배우자, 애정, 커플, 데이트, 이별, 설렘",
@@ -90,6 +93,9 @@ SITUATION_KEYWORDS = {
     "자존감": "자존감, 자신감, 나 자신, 정체성",
     "인생": "인생, 삶, 일상, 행복, 의미",
     "인간관계": "인간관계, 지인, 사회생활, 소통, 갈등",
+    "자연": "자연, 바다, 숲",
+    "스트레스": "스트레스",
+    "불안": "불안, 걱정, 초조함, 긴장, 조급함"
 }
 
 # 최적화를 위해 서버 시작 시 표준 카테고리의 임베딩 미리 계산
@@ -103,9 +109,9 @@ def initialize_embeddings():
         global EMOTION_EMBEDDINGS, SITUATION_EMBEDDINGS
         EMOTION_EMBEDDINGS = {name: get_embedding(keywords) for name, keywords in EMOTION_KEYWORDS.items()}
         SITUATION_EMBEDDINGS = {name: get_embedding(keywords) for name, keywords in SITUATION_KEYWORDS.items()}
-        print("임베딩 계산이 완료되었습니다.")
+        logging.info("임베딩 계산이 완료되었습니다.")
     except Exception as e:
-        print(f"시작 시 임베딩을 계산할 수 없습니다: {e}")
+        logging.info(f"시작 시 임베딩을 계산할 수 없습니다: {e}")
         # API 키가 없거나 다른 문제 발생 시, 서버는 시작되지만 매핑 기능은 실시간으로 처리됨
         pass
 
@@ -113,13 +119,13 @@ def initialize_embeddings():
 def map_to_category(term, category_embeddings, canonical_keyword_dict):
     # 시작 시 임베딩이 계산되지 않았다면, 실시간으로 계산
     if not category_embeddings:
-        print("미리 계산된 임베딩이 없어 실시간으로 계산합니다...")
+        logging.info("미리 계산된 임베딩이 없어 실시간으로 계산합니다...")
         try:
             for name, keywords in canonical_keyword_dict.items():
                 if name not in category_embeddings:
                     category_embeddings[name] = get_embedding(keywords)
         except Exception as e:
-            print(f"실시간 임베딩 계산에 실패했습니다: {e}")
+            logging.info(f"실시간 임베딩 계산에 실패했습니다: {e}")
             return "알 수 없음"
 
     if not term or term == "알 수 없음":
@@ -133,13 +139,13 @@ def map_to_category(term, category_embeddings, canonical_keyword_dict):
     for category, keywords in canonical_keyword_dict.items():
         keyword_list = [kw.strip() for kw in keywords.split(',')]
         if term in keyword_list:
-            print(f"'{term}' -> '{category}' (으)로 직접 매핑되었습니다.")
+            logging.info(f"'{term}' -> '{category}' (으)로 직접 매핑되었습니다.")
             return category
 
     try:
         term_embedding = get_embedding(term)
     except Exception as e:
-        print(f"'{term}'에 대한 임베딩 생성에 실패했습니다: {e}")
+        logging.info(f"'{term}'에 대한 임베딩 생성에 실패했습니다: {e}")
         return "알 수 없음"
 
     # 코사인 유사도 계산
@@ -153,8 +159,8 @@ def map_to_category(term, category_embeddings, canonical_keyword_dict):
 
     # 가장 유사도가 높은 카테고리 반환
     best_match = max(similarities, key=similarities.get)
-    print(f"'{similarities}' -> '{best_match}' (으)로 매핑되었습니다.")
-    print(f"'{term}' -> '{best_match}' (으)로 매핑되었습니다.")
+    logging.info(f"'{similarities}' -> '{best_match}' (으)로 매핑되었습니다.")
+    logging.info(f"'{term}' -> '{best_match}' (으)로 매핑되었습니다.")
     return best_match
 
 # --- 임베딩 기반 분류를 위한 코드 종료 ---
@@ -374,6 +380,7 @@ def serve(path):
     else:
         return send_from_directory(app.static_folder, 'index.html')
 
+initialize_embeddings()
+
 if __name__ == "__main__":
-    initialize_embeddings()
     app.run(host="0.0.0.0", port=5000, debug=True)
